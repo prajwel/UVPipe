@@ -1,0 +1,1 @@
+# To run the pipeline, first follow the instructions provided in UVPipe_Driver/HOWTO.txt, then proceed with the instructions in UVPipe_pilot/HOWTO.txt.
