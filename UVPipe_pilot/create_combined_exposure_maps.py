@@ -10,8 +10,7 @@ from astropy.convolution import convolve
 
 def get_framedata(file):
     hdu = fits.open(file)
-    zero_centroid_corr_factor = hdu[0].header["CORR_FACTOR_ZEROCENTROID"]
-    return hdu[0].data * zero_centroid_corr_factor
+    return hdu[0].data
 
 
 def get_framedata_joblib_loop(fits_files):
