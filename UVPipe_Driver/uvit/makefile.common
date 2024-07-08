@@ -1,0 +1,30 @@
+cc= gcc -c 
+ccc=g++ -O3
+INCLUDE=-I. -I../common/ -I../../include/ $(INCLUDE1)
+LIB=-L ../../lib/ -lpil -lcfitsio -lglog -lfftw3 $(lib_sql)
+#LIB=-L ../../lib/ -lpil -lcfitsio -lglog -lfftw3  -lsqlite3
+CP=cp
+
+#COMMONCPPFILE=$(CDIR)/DataInfo.cpp $(CDIR)/uvtUtils.cpp 
+OBJECTS=$(SOURCES:.cpp=.o)  $(SOURCES2:.c=.o)
+CDIR=../common
+BINDIR=../../bin
+
+all       	: $(EXE)
+		$(CP) $(EXE) $(BINDIR)
+
+$(EXE) 		: $(OBJECTS)
+		$(ccc) $(OBJECTS) $(INCLUDE) $(LIB)  -o  $(EXE)
+		#$(CP) $(EXE) $(BINDIR)
+
+.cpp.o		: 
+		$(ccc) -w -c $< -o $@ $(INCLUDE)
+
+.c.o		: 
+		$(cc) $< -o $@ $(INCLUDE)
+
+
+clean:
+	$(RM) $(EXE)
+	$(RM) *.o $(CDIR)/*.o
+

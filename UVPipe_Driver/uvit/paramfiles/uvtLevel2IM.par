@@ -1,0 +1,123 @@
+level1indir,f,ql,"../Updates_byskg/LEVL1AS1UVT20151217G04_007T02_9000000220_01191.tar_V1.0",,,"Enter level directory path"
+caldbdir,f,ql,"../Updates_byskg/CALDB2/CALD_IIA_23sep15/",,,"Enter caldb directory path"
+level2outdir,f,ql,"l2IM",,,"Enter level2 directory"
+channel,s,ql,"VIS",,,"Channel (NUV/FUV/VIS)"
+utcFlag,b,ql,n,,,"UTC correction to be done or not?"
+parityFlag,i,a,4,,,"Parity check[1 for All three words]/[2 for only X,Y]/[3 for only x]/[4 for only y]"
+history,b,ql,y,,,"History [y/n] :"
+clobber,b,ql,y,,,"Clobber[y/n] :"
+error_per,r,a,30,,,"Percentage error allowed for matching stars"
+GTI_FLAG,b,a,n,,,"GTI filtering to be done or not(y/n)"
+att_flagVal,i,a,0,,,"Attitude flag value"
+flag_thetaComp,b,a,n,,,"Theta computation to be done or not:"
+
+
+#DataIngest
+dropframe,b,a,n,,,"Enter y for drop frame, n for drop packet [y/n]"
+no_of_weightedframes,i,a,200,,,"Enter the number of frames to be Weighted"
+
+#uvtUnitConversion
+unitConversionFlag,b,a,y,,,"Run Unit Conversion [y/n]?"
+darkframe_flag,i,a,0,,,"Dark Subtraction to be done or not"
+dark_startpath,f,a,"AS1OBS69uvtNIIIM00F0_l2_t2220.8787_f2_di.fits",,,"Enter the path for  start Dark Frame"
+dark_endpath,f,a,"AS1OBS69uvtNIIIM00F0_l2_t2254.8660_f978_di.fits",,,"Enter the path for End Dark Frame"
+
+Write_todiskuc,i,a,0,,,"Want To Write output of unitConvertion to Disk?[1 for yes/o for No]"
+Write_todiskbp,i,a,0,,,"Want To Write output of badPixel to Disk?[1 for yes/o for No]"
+Write_todiskff,i,a,0,,,"Want To Write output of FlatField To Disk?[1 for yes/o for No]"
+#uvtFlatFieldCorrection
+flatfieldFlag,b,a,y,,,"Run Flat Field Correction module [y/n]?"
+Write_todiskpp,i,a,0,,,"Want To Write output of pixPadding  to Disk?[1 for yes/o for No]"
+Write_todisksd,i,a,0,,,"Want To Write output of subDivision to Disk?[1 for yes/o for No]"
+Write_todiskcr,i,a,0,,,"Want To Write output of CosmicRay to Disk?[1 for yes/o for No]"
+Write_todiskac,i,a,1,,,"Want To Write output of AccEveryTsec to Disk?[1 for yes/o for No]"
+Write_todisksc,i,a,0,,,"Want To Write output of uvtFindStarCentroid  to Disk?[1 for yes/o for No]"
+Write_todiskqe,i,a,0,,,"Want To Write output of uvtQEMCPCorr  to Disk?[1 for yes/o for No]"
+Write_todiskdd,i,a,0,,,"Want To Write output of uvtDetectorDistortion  to Disk?[1 for yes/o for No]"
+Write_todiskod,i,a,0,,,"Want To Write output of Optical Distortion to Disk?[1 for yes/o for No]"
+Write_todiskde,i,a,1,,,"Want To Write output of Drift Exercise to Disk?[1 for yes/o for No]"
+Write_todisksnr,i,a,0,,,"Want To Write output of Shift and Rotate to Disk?[1 for yes/o for No]"
+
+Write_todiskRFC,i,a,1,,,"Want To Write output of Reference Frame Calculation to Disk?[1 for yes/o for No]"
+Write_todiskwm,i,a,0,,,"Want To Write output of Find Weighted mean to Disk?[1 for yes/o for No]"
+Write_todiskravg,i,a,1,,,"Want To Write output of Register Averaging to Disk?[1 for yes/o for No]"
+
+#uvtPixPadding
+paddingDim,i,a,600,,,"Required Output dimension after padding [Must be integer]"
+
+#uvtAccEveryTsec
+Nacc,i,a,10,,,"Number of frames to accumulate [Must be Integer]"
+
+#uvtQEMCPCorrection
+qemcpFlag,b,a,y,,,"Run Correction for Effects of temperature on QE and MCP [y/n]?"
+
+#uvtSubDivision
+subdivisionFlag,b,a,n,,,"Run Pixel Subdivision [y/n]?"
+subdivisionsize,i,a,4800,,,"Enter the SubDivision Size"
+
+#uvtFindStarCentroid
+algoFlag,i,a,0,,,"Enter value for Algorithm for star detection"
+centroidlimit,i,a,51000,,,"Enter centroid maximum limit"
+threshold,r,a,16,,,"Enter Threshold value for star detection"
+refineWindow,i,a,15,,,"Enter Refine Window Size"
+centroidWindow,i,a,3,,,"Enter Centroid Window Size"
+darkframeFlag,b,a,y,,,"Dark Subtraction Flag(y/n)"
+
+#uvtCosmicRayCorrection
+Threshold_value,r,a,300000,,,"Enter the Threashold value(For Cosmic Correction)"
+minimumTargetedStars,i,a,3,,,"Minimum limit for the number of the stars"
+
+#uvtRefFrameCal
+averageFactor,i,a,1,,,"Enter the value of Average Factor"
+framesToBeDiscard,i,a,2,,,"Enter the number of frames to be Discarded"
+
+#uvtComputeDrift
+diff_Dist,r,h,1,,,"Enter min  Distance value for pixel matching(for Compute Drift)"
+
+freqDomainFilterFlag,i,h,0,,,"Enter 0 for fitting  data ,1 for applying filtering in drift calculation,2 for no fittingand no filtering"
+freq_value,r,h,0.2,,,"Enter Freq value for removing High freq. component(for Compute Drift)"
+orderPitch,i,h,1,,,"Enter order of polynomial for pitch computation"
+typeFiltering,i,h,1,,,"Enter the value for the type of the Filtering(Enter 0 for low pass Filtering/Enter 1 for polinomial Fitting)"
+deltaTime,r,h,40,,,"Enter time duration for fitting"
+
+orderYaw,i,h,1,,,"Enter  order of polynomial for yaw computation"
+orderRoll,i,h,1,,,"Enter order of polynomial for roll computation"
+fittingflag,b,h,y,,,"Fitting to be done or not[y/n]"
+gyro_file,f,a,"gyro_temp.fits",,,"Enter the absolute path of gyrofile"
+diffDist,r,h,1,,,"Min  Distance value for pixel matching(for Compute Drift)"
+error_per,r,h,5,,,"Percentage error allowed for matching stars"
+
+
+option_LeastSquare,i,h,1,,,"Enter algoritham  number to be used for finding drift[1/3]"
+GenMatchStarsFile_flag,b,h,n,,,"Generate Matched Stars files after Drift Computetion(y/n] :"
+ThresholdValue,r,a,300000,,,"Threshold value for Cosmic Ray Correction"
+RASfile,f,a,"1191_RAIM/uvit/01191/uvtV/uvtV.01/uvtComputeDrift_1.6/AS1G04_007T02_9000000220uvtVIIIM00F4_l2_dr.fits",,,"Enter the absolute  path for the RAS file"
+no_of_fileToacc,i,a,2,,,"Enter the value for Accumulation of Frames"
+
+RegAvgfrmsize,i,ql,600,,,"Enter final frame size after registration and averaging"
+
+
+#uvt_im_ra
+averageFactor,i,a,3,,,"Enter the value of Average Factor"
+minimum_noStars,i,a,10,,,"Enter the value of minimum number of Stars "
+shiftRotDetAlgoFlag,i,a,1,,,"Algorithm to be used for finding drift(1/2/3)"
+framesToBeDiscard,i,a,2,,,"Enter the number of frames to be Discarded"
+mode,s,h,"ql",,,"Mode"
+
+
+attitudefile,f,a,"/raid-data1/data/astrowrk/uvit/UVIT_chain_28march/UVIT_VERSION_0.2/20150704_P01_001T01_0000000001_level1/uvit/aux/aux1/AS1P01_001T01_0000000001uvt_level1.att",,,"Attitude file"
+catalogpath,f,h,"/raid-data1/data/astrowrk/uvit/UVIT_chain_28march/Test_Sep2014/LEVEL-1-Data-ver1.9/OBS79_level1/uvit/uvitN/aux1/AS179uvt_level1.att",,,"Catalog path"
+att_timecol,s,h,"Time",,,"Time column name in attitude file"
+att_qcol,s,h,"Q_SAT",,,"Quaternion column name in attitude file"
+threshold,r,a,2.8,,,"Sigma criteria for star detection"
+refine_Window,i,a,15,,,"Refine Window Size"
+centroid_Window,i,a,3,,,"Centroid Window Size"
+database_name,s,ql,"/isilon-sec/projects/astrosat/UVIT/vis_uv_star_catalog.db",,,"path of Database"
+search_algo_forFullFrameAst,i,a,1,,,"Select a Search for catalogue(1 for Rectangle search/2 for circuler search/3 for rectangle search for FUV/4 for Circuler search for FUV/5 for rectagle select for NUV/6 for circuler select for NUV)"
+len_rect_a,s,a,1,,,"lengh for rectangle search"
+len_rect_b,s,a,1,,,"Width for rectangle search"
+Radi_search,s,a,"0.05",,,"Redius for circuler search"
+
+
+minimum_targetedstars,i,a,8,,,"Minimum limit for the number of the stars"
+

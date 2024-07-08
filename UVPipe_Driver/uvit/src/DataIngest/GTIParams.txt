@@ -1,0 +1,48 @@
+PARAMETER		  BIT_POSITION  ACCEPT_CRITERIA
+---------------------------------------------------------
+Temp_CPU_VIS 			0 	 10C-25C						
+Temp_CPU_NUV 			1 	 10C-25C 
+Temp_CPU_FUV 			2 	 10C-25C
+Temp_HVU_VIS 			3 	 10C-30C
+Temp_HVU_NUV 			4        10C-30C
+Temp_HVU_FUV 			5 	 10C-30C
+Temp_TT_NUV_1			6 	 15C-25C
+Temp_TT_NUV_2 			7 	 15C-25c
+Temp_TT_NUV_3			8 	 15C-25C
+Temp_TT_NUV_4 			9 	 15C-25C
+Temp_TT_NUV_5  			10 	 15C-25C
+Temp_TT_NUV_6 			11	 15C-25C
+Temp_TT_FUV_1 			12 	 15C-25C
+Temp_TT_FUV_2 			13 	 15C-25C
+Temp_TT_FUV_3 			14 	 15C-25C
+Temp_TT_FUV_4 			15     	 15C-25C
+Temp_TT_FUV_5 			16 	 15C-25C
+Temp_TT_FUV_6 			17 	 15C-25C
+MCP_Volt_VIS 			18 	 <100v,>2000v
+Cathode_Volt_VIS 		19 	 <-100v,>20v
+Anode_Volt_VIS 			20 	<100v,>4000v
+MCP_Volt_NUV 			21 	<100v,>2000v
+Cathode_Volt_NUV 		22 	 <-100v,>20v
+Anode_Volt_NUV 			23 	<100v,>4000v
+MCP_Volt_FUV 			24 	<100v,>2000v
+Cathode_Volt_FUV 		25 	 <-100v,>20v
+Anode_Volt_FUV 			26 	<100v,>4000v
+Aqur_bit_Filter_wheel_VIS 	27 	1/0
+Aqur_bit_Filter-wheel_NUV 	28 	1/0
+Aqur_bit_Filter-wheel_FUV 	29	1/0
+Angle_to_sun 			30 	>45.0
+Angle_to_Moon 			31 	>45.0
+Bright_limb_earth 		32	>90
+Drift_Rate_Aspect 		33	<5"/s
+Magnitude_Jitter 		34	<0.5"rms
+SAA_flux_calculated 		35	<...units
+CPM_count_rate 			36	<..
+Time_since_SAO_Exit 		37 	>...min
+Time_to_SAO 			38	>...min
+Bit_Error_Rate 			39	<1per100000 
+ssm_motion 			40	0
+LAXPC_purification_ON/OFF 	41 	0
+Solar_panel_motion_ON/OFF 	42 	0
+					
+
+

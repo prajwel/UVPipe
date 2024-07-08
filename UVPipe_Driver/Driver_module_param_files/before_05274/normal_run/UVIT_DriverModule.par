@@ -1,0 +1,387 @@
+#=========================================================================================================================================================
+#RELATIVE ASPECT IM PARAMETER LIST
+#=========================================================================================================================================================
+ZipFlag,b,h,n,,,"Input leve1l is in Zip format or not?('y' for ZIP format/'n' is for TAR format)"
+level1indir,f,ql,"LEVL1AS1UVT20170404A03_103T01_9000001132_08202.tar.gz",,,"Enter Level-1 data (merged or orbit-wise) directory path"
+
+# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+# Editable line 'A' (only one-time per installation) - see line below [CALDB path]
+caldbdir,f,h,"/app/CALDBs/CALDB_L2_v2.1.0/",,,"Enter caldb directory path"
+# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+utcFlag,b,h,n,,,"UTC correction to be done or not? !! DANGER !! DO NOT CHANGE ! "
+crcflag,b,h,n,,,"CRC check to be done or not? !! DANGER !! DO NOT CHANGE ! "
+NUVonNUVflag,b,h,n,,,"RAS from NUV data?('y' for YES,'n' for NO)"
+FUVonFUVflag,b,h,n,,,"RAS from FUV data?('y' for YES,'n' for NO)"
+level2outdir,f,h,"output",,,"Enter level2 directory"
+channel,s,h,"VIS",,,"Channel (NUV/FUV/VIS)"
+junkfileflag,b,h,y,,,"Junk frame to be edited or not?"
+ManualMode,b,h,n,,,"Auto mode('n') or Manual selection of stars for generating RAS('y')?"
+previousOutputL2,f,h,"otuput_6740",,,"Base directory of RAIM output in Auto mode"
+thresholdforjunkFrame,r,h,5000,,,"threshold value for removal of JUNK/HOT pixels"
+history,b,h,y,,,"History [y/n] :"
+clobber,b,h,y,,,"Clobber[y/n] :"
+GTI_FLAG,b,h,n,,,"GTI filtering to be done or not(y/n) !! DANGER !! DO NOT CHANGE ! "
+
+
+#DataIngest
+dropframe,b,h,n,,,"Enter y for drop frame, n for drop packet [y/n]"
+
+
+Write_todiskuc,i,h,0,,,"Want To Write output of unitConvertion to Disk?[1 for yes/o for No]"
+Write_todiskbp,i,h,0,,,"Want To Write output of badPixel to Disk?[1 for yes/o for No]"
+Write_todiskff,i,h,0,,,"Want To Write output of FlatField To Disk?[1 for yes/o for No]"
+
+#uvtFlatFieldCorrection
+flatfieldFlag,b,h,y,,,"Run Flat Field Correction module [y/n]?"
+
+
+Write_todiskpp,i,h,0,,,"Want To Write output of pixPadding  to Disk?[1 for yes/o for No]"
+Write_todisksd,i,h,0,,,"Want To Write output of subDivision to Disk?[1 for yes/o for No]"
+Write_todiskcr,i,h,0,,,"Want To Write output of CosmicRay to Disk?[1 for yes/o for No]"
+Write_todiskac,i,h,0,,,"Want To Write output of AccEveryTsec to Disk?[1 for yes/o for No]"
+Write_todisksc,i,h,0,,,"Want To Write output of uvtFindStarCentroid  to Disk?[1 for yes/o for No]"
+Write_todiskqe,i,h,0,,,"Want To Write output of uvtQEMCPCorr to Disk?[1 for yes/o for No]"
+Write_todiskdd,i,h,0,,,"Want To Write output of uvtDetectorDistortion  to Disk?[1 for yes/o for No]"
+Write_todiskod,i,h,0,,,"Want To Write output of Optical Distortion to Disk?[1 for yes/o for No]"
+
+
+#uvtPixPadding
+paddingDim,i,h,600,,,"Required Output dimension after padding [Must be integer] !! DANGER !! DO NOT CHANGE ! "
+
+#uvtAccEveryTsec
+Nacc,i,h,1,,,"Number of frames to accumulate [Must be Integer] !! DANGER !! DO NOT CHANGE ! "
+
+#uvtQEMCPCorrection
+qemcpFlag,b,h,n,,,"Run Correction for Effects of temperature on QE and MCP [y/n]? !! DANGER !! DO NOT CHANGE ! "
+
+#uvtSubDivision
+subdivisionFlag,b,h,n,,,"Run Pixel Subdivision [y/n]? !! DANGER !! DO NOT CHANGE ! "
+subdivisionsize,i,h,2400,,,"Enter the SubDivision Size"
+
+#uvtFindStarCentroid
+# 04-Jan-2017 : changing 'sigma' multiplier ! 10=>4
+threshold,r,h,10,,,"Enter Threshold value for star peaks"
+background_fact,r,h,20000,,,"Enter backgroud value for image"
+refineWindow,i,h,15,,,"Enter Refine Window Size !! DANGER !! DO NOT CHANGE ! "
+centroidWindow,i,h,3,,,"Enter Centroid Window Size !! DANGER !! DO NOT CHANGE ! "
+darkframeFlag,b,h,y,,,"Dark Subtraction Flag(y/n) !! DANGER !! DO NOT CHANGE ! "
+Window_nb,i,h,7,,,"Enter Window size for comparing frames"
+
+#uvtCosmicRayCorrection
+Threshold_value,r,h,300000,,,"Enter the Threashold value(For Cosmic Correction) !! DANGER !! DO NOT CHANGE ! "
+
+#++++++++++++++++
+# 03-Jan-2017 : changing 'minimumTargetedStars' in "uvtDetectStar" (5=>2)
+# 04-Jan-2017 : changing 'minimumTargetedStars' in "uvtDetectStar" (2=>1)
+#minimumTargetedStars,i,h,5,,,"Minimum limit for the number of the stars"
+#minimumTargetedStars,i,h,2,,,"Minimum limit for the number of the stars"
+minimumTargetedStars,r,h,6,,,"Minimum limit for the number of the stars"
+
+#uvtRefFrame
+averageFactor,i,h,1,,,"Enter the value of Average Factor for reference frame calculation !! DANGER !! DO NOT CHANGE ! "
+framesToBeDiscard,i,h,1,,,"Enter the number of frames to be Discarded for reference frame calculation !! DANGER !! DO NOT CHANGE ! "
+
+#uvtComputeDrift
+freqDomainFilterFlag,i,h,2,,,"Enter 0 for fitting  data ,1 for applying filtering in drift calculation,2 for no fittingand no filtering"
+freq_value,r,h,0.2,,,"Enter Freq value for removing High freq. component(for Compute Drift)"
+orderPitch,i,h,1,,,"Enter order of polynomial for pitch computation"
+typeFiltering,i,h,2,,,"Enter the value for the type of the Filtering(Enter 0 for Spatial Domain Filtering/Enter 1 for Polynomial Fitting/Enter 2 for sliding filtering) !! DANGER !! DO NOT CHANGE ! "
+deltaTime,r,h,4,,,"Enter time duration for fitting"
+orderYaw,i,h,1,,,"Enter  order of polynomial for yaw computation"
+orderRoll,i,h,1,,,"Enter order of polynomial for roll computation"
+fittingflag,b,h,y,,,"Fitting to be done or not[y/n] !! DANGER !! DO NOT CHANGE ! "
+diffDist,r,h,1.0,,,"Min  Distance value for pixel matching(for Compute Drift) !! DANGER !! DO NOT CHANGE ! "
+algoFlag,i,h,3,,,"Algorithm used for finding Stars (1/2/3) !! DANGER !! DO NOT CHANGE ! "
+flag_thetaComp,b,h,n,,,"Theta computation to be done or not:"
+GenMatchStarsFile_flag,b,h,n,,,"Generate Matched Stars files after Drift Computetion(y/n] :"
+ThresholdValue,r,h,400000,,,"Threshold value for Cosmic Ray Correction"
+shiftRotDetAlgoFlag,i,h,1,,,"Algorithm to be used for finding drift(1/2/3) !! DANGER !! DO NOT CHANGE ! "
+
+mode,s,h,"ql",,,"Mode"
+
+
+#=========================================================================================================================================================
+#L2 PC PARAMETER LIST FOR NUV
+#=========================================================================================================================================================
+
+# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+# Editable line 'C1' (only one-time per installation) - see line below [output TAR path (for NUV)]
+pathToOutputTarpc,s,h,"/app/work_area/temp_stuff",,,"Enter the PATH for Output TAR file (for NUV)"
+# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+crcflagpc,b,h,n,,,"CRC check to be done or not? !! DANGER !! DO NOT CHANGE ! "
+parityFlagpc,i,h,2,,,"Parity check(1 for All three words)/(2 for only X,Y) !! DANGER !! DO NOT CHANGE ! "
+historypc,b,h,y,,,"History (y/n) :"
+clobberpc,b,h,y,,,"Clobber(y/n) :"
+startTimepc,r,h,-9999,,,"start_time->"
+endTimepc,r,h,-9999,,,"end_time->"f
+GTI_FLAGpc,b,h,n,,,"GTI filtering to be done or not(y/n) !! DANGER !! DO NOT CHANGE ! "
+QEMCP_tobedonepc,i,h,0,,,"QEMCP Correction to be run or not? !! DANGER !! DO NOT CHANGE ! "
+CentCorr_tobedonepc,i,h,0,,,"Centroid Correction to be run or not? !! DANGER !! DO NOT CHANGE ! "
+CentBias_tobedonepc,i,h,0,,,"Centroid Bias to be done or not? !! DANGER !! DO NOT CHANGE ! "
+frameIntFlagpc,i,h,0,,,"frame integration to be done or not? !! DANGER !! DO NOT CHANGE ! "
+DetectDist_tobedonepc,i,h,1,,,"Detect Distortion Correction  to be done or not? !! DANGER !! DO NOT CHANGE ! "
+OpticDist_tobedonepc,i,h,1,,,"Optical Distortion Correction to be done or not? !! DANGER !! DO NOT CHANGE ! "
+
+
+#DataIngest
+dropframepc,b,h,n,,,"Enter y for drop frame, n for drop packet (y/n) !! DANGER !! DO NOT CHANGE ! "
+
+#uvtFilterBadpix
+thresholdMultphpc,r,h,9999.0,0.0,10000.0,"Enter threshold for multiple photon event !! DANGER !! DO NOT CHANGE ! "
+#thresholdMultphpc,r,h,100.0,0.0,255.0,"Enter threshold for multiple photon event !! DANGER !! DO NOT CHANGE ! "
+
+
+#uvtCosmicRayCorr
+thr_Two_crpc,r,h,9999,,,"Enter _ST_ in threshold = AVG+N*sqrt(avg_events)+ST/(sqrt(avg_events)) to identify Cosmic Ray affected frame !! DANGER !! DO NOT CHANGE ! "
+thr_One_crpc,r,h,9999,,,"Enter _N_ in threshold=AVG+N*sqrt(avg_events)+ST/(sqrt(avg_events)) to identify Cosmic Ray affected frame !! DANGER !! DO NOT CHANGE ! "
+#thr_Two_crpc,r,h,10,,,"Enter _ST_ in threshold = AVG+N*sqrt(avg_events)+ST/(sqrt(avg_events)) to identify Cosmic Ray affected frame !! DANGER !! DO NOT CHANGE ! "
+#thr_One_crpc,r,h,3,,,"Enter _N_ in threshold=AVG+N*sqrt(avg_events)+ST/(sqrt(avg_events)) to identify Cosmic Ray affected frame !! DANGER !! DO NOT CHANGE ! "
+
+
+#uvtFindStarCentroid
+refinedWinSizepc,i,h,15,,,"Enter refined window Size for star detection !! DANGER !! DO NOT CHANGE ! "
+centroidWinSizepc,i,h,3,,,"Enter Centroid window Size for centroid detection !! DANGER !! DO NOT CHANGE ! "
+
+#uvtPixPadding
+
+#uvtFrameIntegration
+framesDiscardpc,i,h,2,,,"Enter the number of frames to discard"
+framesComputepc,i,h,9400,,,"Enter the number of frames to compute"
+FrameIntDimpc,i,h,4800,,,"Enter frame size after frameIntegration !! DANGER !! DO NOT CHANGE ! "
+RegAvgfrmsizepc,i,h,4800,,,"Enter final frame size after registration and averaging !! DANGER !! DO NOT CHANGE ! "
+flag_thetaComppc,b,h,n,,,"Theta computation to be done or not:"
+
+
+#uvtComputeDrift
+diffDistpc,r,h,1,,,"Enter min  Distance value for pixel matching(for Compute Drift) !! DANGER !! DO NOT CHANGE ! "
+shiftRotDetAlgoFlagpc,i,h,1,,,"Enter algorithm  number to be used for finding drift(1/3) !! DANGER !! DO NOT CHANGE ! "
+
+modepc,s,h,"ql",,,"Mode"
+
+
+Write_todiskucpc,i,h,0,,,"Want To Write output of unitConvertion to Disk?[1 for yes/o for No]"
+Write_todiskbppc,i,h,0,,,"Want To Write output of badPixel to Disk?[1 for yes/o for No]"
+Write_todiskffpc,i,h,0,,,"Want To Write output of FlatField To Disk?[1 for yes/o for No]"
+
+Write_todiskpppc,i,h,0,,,"Want To Write output of pixPadding  to Disk?[1 for yes/o for No]"
+Write_todisksdpc,i,h,0,,,"Want To Write output of subDivision to Disk?[1 for yes/o for No]"
+Write_todiskcrpc,i,h,0,,,"Want To Write output of CosmicRay to Disk?[1 for yes/o for No]"
+Write_todiskfipc,i,h,1,,,"Want To Write output of Frameintegration to Disk?[1 for yes/o for No]"
+
+Write_todiskqepc,i,h,0,,,"Want To Write output of uvtQEMCPCorr  to Disk?[1 for yes/o for No]"
+Write_todiskddpc,i,h,0,,,"Want To Write output of uvtDetectorDistortion  to Disk?[1 for yes/o for No]"
+Write_todiskodpc,i,h,0,,,"Want To Write output of Optical Distortion to Disk?[1 for yes/o for No]"
+Write_todiskCentCorrpc,i,h,0,,,"Want To Write output of Centroid Correction to Disk?[1 for yes/o for No]"
+Write_todiskCentBiaspc,i,h,0,,,"Want To Write output of Centroid Bias to Disk?[1 for yes/o for No]"
+
+
+
+catalogpathpc,f,h,"/home/uvit/swarna/1368/20151229_G04_014T02_9000000232_level1/uvit/01368/aux/aux1/AS1G04_014T02_9000000232uvt_level1.att",,,"Catalog path"
+att_timecolpc,s,h,"Time",,,"Time column name in attitude file"
+att_qcolpc,s,h,"Q_SAT",,,"Quaternion column name in attitude file"
+# changing '50' -> '20' 
+#thresholdpc,r,h,50,,,"Sigma criteria for star detection"
+# 12oct2017 '20' -> '5'
+# 15oct17 '5' -> '2'
+#thresholdpc,r,h,10,,,"Sigma criteria for star detection"
+thresholdpc,r,h,2,,,"Sigma criteria for star detection"
+
+
+# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+# Editable line 'B1' (only one-time per installation) - see line below [CATALOGUE path (for NUV)]
+database_namepc,s,h,"/tmp/USNOA2_VIS_GALEX_NUV_FUV_catalogue.db",,,"path of Catalogue Database"
+# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+search_algo_forFullFrameAstpc,i,h,2,,,"Select a Search for catalogue(1 for Rectangle search/2 for circuler search/3 for rectangle search for FUV/4 for Circuler search for FUV/5 for rectagle select for NUV/6 for circuler select for NUV) !! DANGER !! DO NOT CHANGE ! "
+len_rect_apc,s,h,1,,,"lengh for rectangle search"
+len_rect_bpc,s,h,1,,,"Width for rectangle search"
+Radi_searchpc,s,h,"0.05",,,"Redius for circuler search !! DANGER !! DO NOT CHANGE ! "
+minimum_targetedstarspc,i,h,6,,,"Minimum limit for the number of the stars"
+
+
+
+#=========================================================================================================================================================
+#L2 PC PARAMETER LIST FOR FUV 
+#=========================================================================================================================================================
+
+# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+# Editable line 'C2' (only one-time per installation) - see line below [output TAR path (for FUV)]
+pathToOutputTarpcfuv,s,h,"/app/work_area/temp_stuff",,,"Enter the PATH for Output TAR file (for FUV)"
+# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+crcflagpcfuv,b,h,n,,,"CRC check to be done or not? !! DANGER !! DO NOT CHANGE ! "
+parityFlagpcfuv,i,h,2,,,"Parity check(1 for All three words)/(2 for only X,Y) !! DANGER !! DO NOT CHANGE ! "
+historypcfuv,b,h,y,,,"History (y/n) :"
+clobberpcfuv,b,h,y,,,"Clobber(y/n) :"
+
+startTimepcfuv,r,h,-9999,,,"start_time->"
+endTimepcfuv,r,h,-9999,,,"end_time->"
+GTI_FLAGpcfuv,b,h,n,,,"GTI filtering to be done or not(y/n) !! DANGER !! DO NOT CHANGE ! "
+QEMCP_tobedonepcfuv,i,h,0,,,"QEMCP Correction to be run or not? !! DANGER !! DO NOT CHANGE ! "
+CentCorr_tobedonepcfuv,i,h,0,,,"Centroid Correction to be run or not? !! DANGER !! DO NOT CHANGE ! "
+CentBias_tobedonepcfuv,i,h,0,,,"Centroid Bias to be done or not? !! DANGER !! DO NOT CHANGE ! "
+frameIntFlagpcfuv,i,h,0,,,"frame integration to be done or not? !! DANGER !! DO NOT CHANGE ! "
+DetectDist_tobedonepcfuv,i,h,1,,,"Detect Distortion Correction  to be done or not? !! DANGER !! DO NOT CHANGE ! "
+OpticDist_tobedonepcfuv,i,h,1,,,"Optical Distortion Correction to be done or not? !! DANGER !! DO NOT CHANGE ! "
+
+
+#DataIngest
+dropframepcfuv,b,h,n,,,"Enter y for drop frame, n for drop packet (y/n) !! DANGER !! DO NOT CHANGE ! "
+
+#uvtFilterBadpix
+thresholdMultphpcfuv,r,h,9999.0,0.0,10000.0,"Enter threshold for multiple photon event !! DANGER !! DO NOT CHANGE ! "
+#thresholdMultphpcfuv,r,h,100.0,0.0,255.0,"Enter threshold for multiple photon event !! DANGER !! DO NOT CHANGE ! "
+
+
+#uvtCosmicRayCorr
+thr_Two_crpcfuv,r,h,9999,,,"Enter _ST_ in threshold = AVG+N*sqrt(avg_events)+ST/(sqrt(avg_events)) to identify Cosmic Ray affected frame !! DANGER !! DO NOT CHANGE ! "
+thr_One_crpcfuv,r,h,9999,,,"Enter _N_ in threshold=AVG+N*sqrt(avg_events)+ST/(sqrt(avg_events)) to identify Cosmic Ray affected frame !! DANGER !! DO NOT CHANGE ! "
+#thr_Two_crpcfuv,r,h,10,,,"Enter _ST_ in threshold = AVG+N*sqrt(avg_events)+ST/(sqrt(avg_events)) to identify Cosmic Ray affected frame"
+#thr_One_crpcfuv,r,h,3,,,"Enter _N_ in threshold=AVG+N*sqrt(avg_events)+ST/(sqrt(avg_events)) to identify Cosmic Ray affected frame"
+cmpFramespcfuv,i,h,30,,,"Enter no of (previous) frames to find AVG & SIGMA for Cosmic Ray detection"
+thrValpcfuv,r,h,5,,,"Enter _N_ in threshold=AVG+N*SIGMA to identify Cosmic Ray affeced frame"
+
+
+#uvtFindStarCentroid
+refinedWinSizepcfuv,i,h,15,,,"Enter refined window Size for star detection !! DANGER !! DO NOT CHANGE ! "
+centroidWinSizepcfuv,i,h,3,,,"Enter Centroid window Size for centroid detection !! DANGER !! DO NOT CHANGE ! "
+
+
+#uvtFrameIntegration
+framesDiscardpcfuv,i,h,2,,,"Enter the number of frames to discard"
+framesComputepcfuv,i,h,9400,,,"Enter the number of frames to compute"
+FrameIntDimpcfuv,i,h,4800,,,"Enter frame size after frameIntegration !! DANGER !! DO NOT CHANGE ! "
+RegAvgfrmsizepcfuv,i,h,4800,,,"Enter final frame size after registration and averaging !! DANGER !! DO NOT CHANGE ! "
+flag_thetaComppcfuv,b,h,n,,,"Theta computation to be done or not:"
+
+
+#uvtRefFrame
+#averageFactorpcfuv,i,h,1,,,"Enter frame count for averaging in ref. frame calculation"
+#framesToBeDiscardpcfuv,i,h,0,,,"Enter number of frames to be Discarded in ref. frame calculation"
+
+#uvtComputeDrift
+diffDistpcfuv,r,h,1,,,"Enter min  Distance value for pixel matching(for Compute Drift)"
+shiftRotDetAlgoFlagpcfuv,i,h,1,,,"Enter algorithm  number to be used for finding drift(1/3) !! DANGER !! DO NOT CHANGE ! "
+
+modepcfuv,s,h,"ql",,,"Mode"
+
+
+Write_todiskucpcfuv,i,h,0,,,"Want To Write output of unitConvertion to Disk?[1 for yes/o for No]"
+Write_todiskbppcfuv,i,h,0,,,"Want To Write output of badPixel to Disk?[1 for yes/o for No]"
+Write_todiskffpcfuv,i,h,0,,,"Want To Write output of FlatField To Disk?[1 for yes/o for No]"
+Write_todiskpppcfuv,i,h,0,,,"Want To Write output of pixPadding  to Disk?[1 for yes/o for No]"
+Write_todisksdpcfuv,i,h,0,,,"Want To Write output of subDivision to Disk?[1 for yes/o for No]"
+Write_todiskcrpcfuv,i,h,0,,,"Want To Write output of CosmicRay to Disk?[1 for yes/o for No]"
+Write_todiskfipcfuv,i,h,1,,,"Want To Write output of Frameintegration to Disk?[1 for yes/o for No]"
+Write_todiskqepcfuv,i,h,0,,,"Want To Write output of uvtQEMCPCorr  to Disk?[1 for yes/o for No]"
+Write_todiskddpcfuv,i,h,0,,,"Want To Write output of uvtDetectorDistortion  to Disk?[1 for yes/o for No]"
+Write_todiskodpcfuv,i,h,0,,,"Want To Write output of Optical Distortion to Disk?[1 for yes/o for No]"
+Write_todiskCentCorrpcfuv,i,h,0,,,"Want To Write output of Centroid Correction to Disk?[1 for yes/o for No]"
+Write_todiskCentBiaspcfuv,i,h,0,,,"Want To Write output of Centroid Bias to Disk?[1 for yes/o for No]"
+
+
+catalogpathpcfuv,f,h,"/home/uvit/swarna/1368/20151229_G04_014T02_9000000232_level1/uvit/01368/aux/aux1/AS1G04_014T02_9000000232uvt_level1.att",,,"Catalog path"
+att_timecolpcfuv,s,h,"Time",,,"Time column name in attitude file"
+att_qcolpcfuv,s,h,"Q_SAT",,,"Quaternion column name in attitude file"
+thresholdpcfuv,r,h,50,,,"Sigma criteria for star detection"
+
+
+# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+# Editable line 'B2' (only one-time per installation) - see line below [CATALOGUE path (for FUV)]
+database_namepcfuv,s,h,"/tmp/USNOA2_VIS_GALEX_NUV_FUV_catalogue.db",,,"path of Catalogue Database"
+# $$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+
+
+search_algo_forFullFrameAstpcfuv,i,h,2,,,"Select a Search for catalogue(1 for Rectangle search/2 for circuler search/3 for rectangle search for FUV/4 for Circuler search for FUV/5 for rectagle select for NUV/6 for circuler select for NUV) !! DANGER !! DO NOT CHANGE ! "
+len_rect_apcfuv,s,h,1,,,"lengh for rectangle search"
+len_rect_bpcfuv,s,h,1,,,"Width for rectangle search"
+Radi_searchpcfuv,s,h,"0.05",,,"Redius for circuler search !! DANGER !! DO NOT CHANGE ! "
+minimum_targetedstarspcfuv,i,h,5,,,"Minimum limit for the number of the stars"
+
+
+
+#=========================================================================================================================================================
+#RELATIVE ASPECT PC PARAMETER LIST(FOR NUV OR FUV !! new in V5.7 16-Nov-2017)
+#=========================================================================================================================================================
+
+parityFlagrapc,i,h,2,,,"Parity check(1 for All three words)/(2 for only X,Y) !! DANGER !! DO NOT CHANGE ! "
+historyrapc,b,h,y,,,"History (y/n) :"
+clobberrapc,b,h,y,,,"Clobber(y/n) :"
+qemcpFlagrapc,b,h,n,,,"Run Correction for Effects of temperature on QE and MCP (y/n) !! DANGER !! DO NOT CHANGE ! "
+
+GTI_FLAGrapc,b,h,n,,,"GTI filtering to be done or not(y/n) !! DANGER !! DO NOT CHANGE ! "
+GenMatchStarsFile_flagrapc,b,h,n,,,"Generate Matched Stars files after Drift Computetion(y/n] :"
+crcflagrapc,b,h,n,,,"CRC check to be done or not? !! DANGER !! DO NOT CHANGE ! "
+
+#DataIngest
+dropframerapc,b,h,n,,,"Enter y for drop frame, n for drop packet (y/n) !! DANGER !! DO NOT CHANGE ! "
+
+
+#uvtFilterBadpix
+thresholdMultphrapc,r,h,9999.0,0.0,10000.0,"Enter threshold for multiple photon event !! DANGER !! DO NOT CHANGE ! "
+#thresholdMultphrapc,r,h,100.0,0.0,255.0,"Enter threshold for multiple photon event !! DANGER !! DO NOT CHANGE ! "
+
+
+#uvtFlatFieldCorrection
+flatfieldFlagrapc,b,h,n,,,"Run Flat Field Correction module (y/n) !! DANGER !! DO NOT CHANGE ! "
+
+
+#uvtCosmicRayCorr
+cmpFramesrapc,i,h,20,,,"Enter The value of Compare frames for the Cosmic Ray"
+
+
+#uvtFindStarCentroid
+background_factrapc,r,h,0.3915,,,"Enter backgroud value for image"
+algoFlagrapc,i,h,3,,,"Enter Algorithm number for finding the stars and centroid(1 for SAC algorithm) !! DANGER !! DO NOT CHANGE ! "
+minimumTargetedStarsrapc,i,h,4,,,"Enter Minimum limit for the number of the stars"
+thresholdrapc,r,h,200,,,"Enter multiplication factor for RMS for peak(star) detection"
+refinedWinSizerapc,i,h,15,,,"Enter refined window Size for star detection !! DANGER !! DO NOT CHANGE ! "
+centroidWinSizerapc,i,h,3,,,"Enter Centroid window Size for centroid detection !! DANGER !! DO NOT CHANGE ! "
+StarDetectionCentroidPriThrrapc,r,h,16500,,,"Enter Threshold Value :"
+StarDetectionCentroidSecThrrapc,r,h,100,,,"Enter Secondary Threshold Value :"
+StarDetectionCentroidSqrSizerapc,i,h,24,,,"Enter algorithm square size :"
+Window_nbrapc,i,h,7,,,"Enter Window size for comparing frames"
+
+
+#uvtFrameIntegration
+framesDiscardrapc,i,h,0,,,"Enter the number of frames to discard"
+framesComputerapc,i,h,90000,,,"Enter the number of frames to compute"
+FrameIntDimrapc,i,h,600,,,"Enter frame size after frameIntegration !! DANGER !! DO NOT CHANGE ! "
+
+
+#uvtRefFrame
+averageFactorrapc,i,h,1,,,"Enter frame count for averaging in ref. frame calculation !! DANGER !! DO NOT CHANGE ! "
+framesToBeDiscardrapc,i,h,1,,,"Enter number of frames to be Discarded in ref. frame calculation !! DANGER !! DO NOT CHANGE ! "
+
+#uvtComputeDrift
+flag_thetaComprapc,b,h,n,,,"Theta Computation to be done :"
+diffDistrapc,r,h,1,,,"Enter min  Distance value for pixel matching(for Compute Drift)"
+freqDomainFilterFlagrapc,i,h,2,,,"Enter 0 for Time Domain filtering, 1 for Freq Domain filtering in drift calculation, 2 for no filtering"
+freqValuerapc,r,h,0.2,,,"Enter Freq value for removing High freq. component(for Compute Drift)"
+orderPitchrapc,i,h,1,,,"Enter order of polynomial for pitch computation"
+typeFilteringrapc,i,h,2,,,"Enter the value for the type of the Filtering(Enter 0 for Spatial Filtering/Enter 1 for polynomial & 2 for Sliding polynomial) !! DANGER !! DO NOT CHANGE ! "
+deltaTimerapc,r,h,10,,,"Enter time duration for fitting"
+orderYawrapc,i,h,1,,,"Enter  order of polynomial for yaw computation"
+orderRollrapc,i,h,1,,,"Enter order of polynomial for roll computation"
+fittingFlagrapc,b,h,y,,,"Fitting to be done or not(y/n)"
+shiftRotDetAlgoFlagrapc,i,h,3,,,"Enter algorithm  number to be used for finding drift(1/3) !! DANGER !! DO NOT CHANGE ! "
+
+moderapc,s,h,"ql",,,"Mode"
+
+
+Write_todiskucrapc,i,h,0,,,"Want To Write output of unitConvertion to Disk?[1 for yes/o for No]"
+Write_todiskbprapc,i,h,0,,,"Want To Write output of badPixel to Disk?[1 for yes/o for No]"
+Write_todiskffrapc,i,h,0,,,"Want To Write output of FlatField To Disk?[1 for yes/o for No]"
+Write_todiskpprapc,i,h,0,,,"Want To Write output of pixPadding  to Disk?[1 for yes/o for No]"
+Write_todisksdrapc,i,h,0,,,"Want To Write output of subDivision to Disk?[1 for yes/o for No]"
+Write_todiskcrrapc,i,h,0,,,"Want To Write output of CosmicRay to Disk?[1 for yes/o for No]"
+Write_todiskfirapc,i,h,1,,,"Want To Write output of Frameintegration to Disk?[1 for yes/o for No]"
+Write_todiskscrapc,i,h,0,,,"Want To Write output of uvtFindStarCentroid  to Disk?[1 for yes/o for No]"
+Write_todiskqerapc,i,h,0,,,"Want To Write output of uvtQEMCPCorr  to Disk?[1 for yes/o for No]"
+Write_todiskddrapc,i,h,0,,,"Want To Write output of uvtDetectorDistortion  to Disk?[1 for yes/o for No]"
+Write_todiskodrapc,i,h,0,,,"Want To Write output of Optical Distortion to Disk?[1 for yes/o for No]"
+Write_todiskCentCorrrapc,i,h,0,,,"Want To Write output of Centroid Correction to Disk?[1 for yes/o for No]"
+Write_todiskCentBiasrapc,i,h,0,,,"Want To Write output of Centroid Bias to Disk?[1 for yes/o for No]"
+

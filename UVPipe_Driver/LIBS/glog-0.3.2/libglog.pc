@@ -1,0 +1,10 @@
+prefix=/home/prajwel/AS1UVITLevel2DataPipeline-L2DIST-6.3/as1/LIBS/glog-0.3.2/../..
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: libglog
+Description: Google Log (glog) C++ logging framework
+Version: 0.3.2
+Libs: -L${libdir} -lglog
+Cflags: -I${includedir}

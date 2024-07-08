@@ -1,0 +1,68 @@
+SIMPLE  =                    T / file does conform to FITS standard             
+BITPIX  =                    8 / number of bits per data pixel                  
+NAXIS   =                    0 / number of data axes                            
+EXTEND  =                    T / FITS dataset may contain extensions  
+
+        Basic information
+
+FILENAME= 'thisfile.fits' / Name of the file
+FILEDATE= '2024-04-03T00:00:00.00' / UTC date file created
+FILEORIG= 'UVIT-POC, IIA'      / Who created the file
+TIMESYS = 'UTC'           / Principal time system for time-related keywords
+TIMEUNIT= 's'           / Default unit applicable to all time values
+PIPE_VER= '7.0.0'           / UVIT Level2 pipeline version
+CALDBVER= '2.1.0'          / Calibration database version
+HEADRVER= '1.0.0'          / Header template version
+OBSERVAT= 'AstroSat'       / Observatory used to acquire the data
+TELESCOP= 'UVIT'           / Instrument used on the observatory
+DATATYPE= 'events list' / Type of data represented in this file
+
+        Instrument configuration information
+
+DETECTOR= 'FUV' / Detector used
+FILTERID= 'F1' / Filter ID
+FILNAMEN= 'F148W' / New filter name
+FILNAMEO= 'CaF2-1' / Old filter name
+OBS_MODE= 'PC      '           / IM or PC
+WIN_XOFF= 180 / Frame size setting X Offset
+WIN_YOFF= 180 / Frame size setting Y Offset
+WIN_X_SZ= 149 / Frame size setting X size
+WIN_Y_SZ= 149 / Frame size setting Y size
+CENTROID= '3S' / Centroiding Algorithm (5S, 3S, 3C)
+RA_PNT  = '0' / Telescope pointing (Right Ascension)
+DEC_PNT = '0' / Telescope pointing (Declination)
+
+        Observation identifiers
+
+DATE-OBS= '2024-04-03'         / [yyyy-mm-dd] UTC date at start of observation
+TIME-OBS= '00:00:00.000'    / [hh:mm:ss.sss] UTC time at start of observation
+DATE-BEG= '2024-04-03T00:00:00.000' / Date-time start of exposure
+DATE-END= '2024-04-05T00:00:00.000' / Date-time end of exposure
+OBS_ID  = 'G01_001T01_9000000001' /  Observation identifier
+PROPOSID= 'G01_001'        / Proposal identifier
+TARGETID= 'T01'           / Target identifier
+OBSERVER= 'silent'           / PI name
+OBSLABEL= 'somewhereinthesky' / PI given observation label
+
+        Exposure parameters
+
+EXP_TIME= 100000 / [s] Median of the combined exposure map
+MEDFRAME= 2871751 / Median of the combined exposure map in frames
+AVGFRMRT= 28.717518 / Average framerate of combined episodes
+STDFRMRT= 5.57940E-05 / Framerate standard deviation
+EXPSTART= 59777.464446825 / [d] Exposure start time in MJD
+EXPEND  = 59777.53803259259 / [d] Exposure end time in MJD
+
+        Level1 file used for Level2 processing
+
+LVL1FILE= 'LEVL1AS1UVT20240403G01_001T01_9000000001_00001.tar_V1.2'
+
+        Combining information
+
+N_EPISDS= 10            / Number of episodes combined
+COMBMETH= 'DEFAULT_METHOD' / Combining method used
+
+        Image quality information
+
+SEER_1  = 0            / Source 1 encircled energy ratio
+SEER_2  = 0            / Source 2 encircled energy ratio

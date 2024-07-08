@@ -1,0 +1,15 @@
+# Follow these steps to build and run a container image using Podman:
+
+#1. Navigate to the UVPipe_Driver directory and specify a temporary directory (TMPDIR). For example:
+export TMPDIR=/home/prajwel/podman_tmp
+
+#2. Build the container image using the following command:
+podman build -t uvpipe_driver .
+
+#3. Run the uvpipe_driver container with the following command:
+podman run --rm -it -v /home/prajwel/where_Level1_data_is_kept:/app/work_area:Z uvpipe_driver 
+
+#Note: Replace /home/prajwel/where_Level1_data_is_kept with the directory path where the Level 1 dataset is stored.
+
+#NOTE To reset the Podman environment and clean up all builds, use the following command:
+podman system reset

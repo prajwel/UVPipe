@@ -1,0 +1,14 @@
+aafitrans
+astroalign    
+astropy
+curvit    
+joblib    
+matplotlib
+numpy
+openpyxl
+pandas
+photutils
+reproject
+scipy
+scikit-image
+xlsxwriter

@@ -1,0 +1,67 @@
+#!/bin/bash  
+
+
+checkStatus()
+{
+	status=$1
+	msg=$2
+	if [ $status -ne 0 ]
+	then
+		echo $msg
+		exit $status
+	fi
+}
+
+CURDIR=`pwd`
+
+InstallLib()
+{
+	LIBDIR=$1
+	LIBNAME=$2
+
+	echo  -e "\e[1;34m===================================================================\e[0m"
+	echo -e "\e[1;34m Installing $LIBNAME \e[0m"
+	echo  -e "\e[1;34m===================================================================\e[0m"
+	
+	cd $CURDIR
+	
+	cd $LIBDIR
+	echo -e "\e[1;34m Changed directory to `pwd`\e[0m"
+	#sleep 2
+	
+	./configure --prefix=`pwd`/../.. 
+	status=`echo $?`
+	checkStatus $status "***Error in configuring $LIBNAME library ***"
+	echo -e "\e[1;34m--------------Completed configuring $LIBNAME library--------------\e[0m"
+	#sleep 2
+	
+	make clean
+	make
+	status=`echo $?`
+	checkStatus $status "***Error in building $LIBNAME library***"
+	echo  -e "\e[1;34m--------------Completed building $LIBNAME library------------------\e[0m"
+	#sleep 2
+
+	make install
+	status=`echo $?`
+	checkStatus $status "***Error in installing $LIBNAME library***"
+	echo  -e "\e[1;34m-------------Completed installing $LIBNAME library-----------------\e[0m"
+	#sleep 2
+}
+
+
+InstallLib LIBS/fftw-3.2.2 "FFTW"
+InstallLib LIBS/glog-0.3.2 "GLOG"
+InstallLib LIBS/cfitsio "CFITSIO"
+
+cd $CURDIR	
+make -C LIBS/pil clean;make -C LIBS/pil
+cd $CURDIR
+cp -r lib/ uvit/
+cp -r include/ uvit/
+echo   "xhost + " >>~/.cshrc
+echo   "limit stacksize unlimited " >>~/.cshrc
+echo   "limit coredumpsize unlimited " >>~/.cshrc
+
+	echo  -e "\e[1;34m------------- installing LIBS  completed successfully-----------------\e[0m"
+

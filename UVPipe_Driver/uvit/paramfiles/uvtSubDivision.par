@@ -1,0 +1,6 @@
+inputdatadir,f,a,"uvtPixPadding_0.3",,,"Input directory path"
+subdivisionsize,i,a,9600,,,"Output SubDivided frame dimension"
+outdir,f,a,".",,,"Output directory path"
+clobber,b,a,y,,,"Overwrite output(y/n)"
+history,b,a,y,,,"Write history(y/n) :"
+mode,s,h,"ql",,,"Enter mode"

@@ -1,0 +1,14 @@
+g++ -O3  -w -c main.cpp -o main.o -I. -I../common/ -I../../include/ -I. -I../common/ -I../../../include/  -I../uvtFullFrameAst/
+g++ -O3  -w -c UVIT_DriverModule.cpp -o UVIT_DriverModule.o -I. -I../common/ -I../../include/ -I. -I../common/ -I../../../include/  -I../uvtFullFrameAst/
+g++ -O3  -w -c ../common/DataInfo.cpp -o ../common/DataInfo.o -I. -I../common/ -I../../include/ -I. -I../common/ -I../../../include/  -I../uvtFullFrameAst/
+g++ -O3  -w -c ../common/uvtUtils.cpp -o ../common/uvtUtils.o -I. -I../common/ -I../../include/ -I. -I../common/ -I../../../include/  -I../uvtFullFrameAst/
+g++ -O3  -w -c ../common/transform.cpp -o ../common/transform.o -I. -I../common/ -I../../include/ -I. -I../common/ -I../../../include/  -I../uvtFullFrameAst/
+g++ -O3  -w -c ../common/fft.cpp -o ../common/fft.o -I. -I../common/ -I../../include/ -I. -I../common/ -I../../../include/  -I../uvtFullFrameAst/
+g++ -O3  -w -c ../common/caldb_Handler.cpp -o ../common/caldb_Handler.o -I. -I../common/ -I../../include/ -I. -I../common/ -I../../../include/  -I../uvtFullFrameAst/
+g++ -O3  -w -c ../common/Directory.cpp -o ../common/Directory.o -I. -I../common/ -I../../include/ -I. -I../common/ -I../../../include/  -I../uvtFullFrameAst/
+g++ -O3  -w -c ../common/spMatrix.cpp -o ../common/spMatrix.o -I. -I../common/ -I../../include/ -I. -I../common/ -I../../../include/  -I../uvtFullFrameAst/
+g++ -O3  -w -c ../common/Attitude.cpp -o ../common/Attitude.o -I. -I../common/ -I../../include/ -I. -I../common/ -I../../../include/  -I../uvtFullFrameAst/
+g++ -O3  -w -c ../common/Database.cpp -o ../common/Database.o -I. -I../common/ -I../../include/ -I. -I../common/ -I../../../include/  -I../uvtFullFrameAst/
+g++ -O3  main.o UVIT_DriverModule.o ../common/DataInfo.o ../common/uvtUtils.o ../common/transform.o ../common/fft.o ../common/caldb_Handler.o ../common/Directory.o ../common/spMatrix.o ../common/Attitude.o ../common/Database.o ../uvtFullFrameAst/uvtFullFrameAst.o   -I. -I../common/ -I../../include/ -I. -I../common/ -I../../../include/  -I../uvtFullFrameAst/ -L ../../lib/ -lpil -lcfitsio -lglog -lfftw3 -lsqlite3  -o  UVIT_DriverModule
+#cp UVIT_DriverModule ../../bin
+cp UVIT_DriverModule ../../bin

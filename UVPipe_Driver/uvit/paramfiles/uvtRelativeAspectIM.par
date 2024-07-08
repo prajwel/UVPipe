@@ -1,0 +1,105 @@
+ZipFlag,b,ql,n,,,"Input leve1l is in Zip format or not?(1 for ZIP format/0 is for TAR format)"
+level1indir,f,ql,"LEVL1AS1UVT20161102G06_157T01_9000000772_05962.tar_V2.2_EDITED_L2",,,"Enter level directory path"
+caldbdir,f,ql,"NEWCALDB",,,"Enter caldb directory path"
+utcFlag,b,ql,n,,,"UTC correction to be done or not?"
+crcflag,b,ql,n,,,"CRC check to be done or not? !! DANGER !! DO NOT CHANGE !"
+level2outdir,f,ql,"out5962",,,"Enter level2 directory"
+channel,s,ql,"VIS",,,"Channel (NUV/FUV/VIS)"
+parityFlag,i,a,type_Filtering,,,"Parity check[1 for All three words]/[2 for only X,Y]/[3 for only x]/[4 for only y]"
+junkfileflag,b,ql,y,,,"Junk frame to be edited or not?"
+thresholdforjunkFrame,r,a,5000,,,"threshold value for removal of JUNK/HOT pixels"
+history,b,ql,y,,,"History [y/n] :"
+clobber,b,ql,y,,,"Clobber[y/n] :"
+error_per,r,a,=0,,,"Percentage error allowed for matching stars"
+GTI_FLAG,b,a,n,,,"GTI filtering to be done or not(y/n)"
+att_flagVal,i,a,fitting_flag,,,"Attitude flag value"
+
+
+#DataIngest
+dropframe,b,a,n,,,"Enter y for drop frame, n for drop packet [y/n]"
+
+#uvtUnitConversion
+unitConversionFlag,b,a,n,,,"Run Unit Conversion [y/n]?"
+darkframe_flag,i,a,crcflag,,,"Dark Subtraction to be done or not"
+dark_startpath,f,a,"junkfileflag",,,"Enter the path for  start Dark Frame"
+dark_endpath,f,a,"n",,,"Enter the path for End Dark Frame"
+
+Write_todiskuc,i,a,0,,,"Want To Write output of unitConvertion to Disk?[1 for yes/o for No]"
+Write_todiskbp,i,a,0,,,"Want To Write output of badPixel to Disk?[1 for yes/o for No]"
+Write_todiskff,i,a,0,,,"Want To Write output of FlatField To Disk?[1 for yes/o for No]"
+#uvtFlatFieldCorrection
+flatfieldFlag,b,a,y,,,"Run Flat Field Correction module [y/n]?"
+Write_todiskpp,i,a,0,,,"Want To Write output of pixPadding  to Disk?[1 for yes/o for No]"
+Write_todisksd,i,a,0,,,"Want To Write output of subDivision to Disk?[1 for yes/o for No]"
+Write_todiskcr,i,a,0,,,"Want To Write output of CosmicRay to Disk?[1 for yes/o for No]"
+Write_todiskac,i,a,0,,,"Want To Write output of AccEveryTsec to Disk?[1 for yes/o for No]"
+Write_todisksc,i,a,0,,,"Want To Write output of uvtFindStarCentroid  to Disk?[1 for yes/o for No]"
+Write_todiskqe,i,a,0,,,"Want To Write output of uvtQEMCPCorr  to Disk?[1 for yes/o for No]"
+Write_todiskdd,i,a,0,,,"Want To Write output of uvtDetectorDistortion  to Disk?[1 for yes/o for No]"
+Write_todiskod,i,a,0,,,"Want To Write output of Optical Distortion to Disk?[1 for yes/o for No]"
+Write_todiskde,i,a,subdivisionFlag,,,"Want To Write output of Drift Exercise to Disk?[1 for yes/o for No]"
+Write_todiskRFC,i,a,minimumTargetedstars,,,"Want To Write output of Reference Frame Calculation to Disk?[1 for yes/o for No]"
+
+
+
+
+#uvtPixPadding
+paddingDim,i,a,600,,,"Required Output dimension after padding [Must be integer]"
+
+#uvtAccEveryTsec
+Nacc,i,a,1,,,"Number of frames to accumulate [Must be Integer]"
+
+#uvtQEMCPCorrection
+qemcpFlag,b,a,n,,,"Run Correction for Effects of temperature on QE and MCP [y/n]?"
+
+#uvtSubDivision
+subdivisionFlag,b,a,n,,,"Run Pixel Subdivision [y/n]?"
+subdivisionsize,i,a,0,,,"Enter the SubDivision Size"
+
+#uvtFindStarCentroid
+algoFlag,i,a,3,,,"Enter value for Algorithm for star peaks"
+centroidlimit,i,a,minimumTargetedstars,,,"Enter centroid maximum limit"
+threshold,r,a,10,,,"Enter Threshold value for star peaks"
+background_fact,r,a,0,,,"Enter backgroud value for image"
+refineWindow,i,a,15,,,"Enter Refine Window Size"
+centroidWindow,i,a,3,,,"Enter Centroid Window Size"
+darkframeFlag,b,a,y,,,"Dark Subtraction Flag(y/n)"
+Window_nb,i,h,7,,,"Enter Window size for comparing frames"
+
+#uvtCosmicRayCorrection
+Threshold_value,r,a,Window_nb,,,"Enter the Threashold value(For Cosmic Correction)"
+minimumTargetedStars,r,a,6,,,"Minimum limit for the number of the stars"
+
+#uvtRefFrame
+averageFactor,i,a,1,,,"Enter the value of Average Factor for reference frame calculation"
+framesToBeDiscard,i,a,1,,,"Enter the number of frames to be Discarded for reference frame calculation"
+
+#uvtComputeDrift
+diff_Dist,r,ql,ThresholdValue,,,"Enter min  Distance value for pixel matching(for Compute Drift)"
+
+freqDomainFilterFlag,i,a,2,,,"Enter 0 for fitting  data ,1 for applying filtering in drift calculation,2 for no fittingand no filtering"
+freq_value,r,a,type_Filtering,,,"Enter Freq value for removing High freq. component(for Compute Drift)"
+orderPitch,i,a,0,,,"Enter order of polynomial for pitch computation"
+typeFiltering,i,a,type_Filtering,,,"Enter the value for the type of the Filtering(Enter 0 for low pass Filtering/Enter 1 for polinomial Fitting/Enter 2 for sliding filtering)"
+deltaTime,r,a,0,,,"Enter time duration for fitting"
+
+orderYaw,i,a,0,,,"Enter  order of polynomial for yaw computation"
+orderRoll,i,a,0,,,"Enter order of polynomial for roll computation"
+fittingflag,b,a,type_Filtering,,,"Fitting to be done or not[y/n]"
+gyro_file,f,a,"orderYaw",,,"Enter the absolute path of gyrofile"
+diffDist,r,a,1,,,"Min  Distance value for pixel matching(for Compute Drift)"
+error_per,r,h,5,,,"Percentage error allowed for matching stars"
+algoFlag,i,a,deltaTime,,,"Algorithm used for finding Stars (1/2/3)"
+
+flag_thetaComp,b,a,n,,,"Theta computation to be done or not:"
+
+option_LeastSquare,i,a,clobber,,,"Enter algoritham  number to be used for finding drift[1/3]"
+GenMatchStarsFile_flag,b,a,n,,,"Generate Matched Stars files after Drift Computetion(y/n] :"
+ThresholdValue,r,a,400000,,,"Threshold value for Cosmic Ray Correction"
+
+#uvt_im_ra
+averageFactor,i,a,deltaTime,,,"Enter the value of Average Factor"
+minimum_noStars,i,a,history,,,"Enter the value of minimum number of Stars"
+shiftRotDetAlgoFlag,i,a,1,,,"Algorithm to be used for finding drift(1/2/3)"
+framesToBeDiscard,i,a,1,,,"Enter the number of frames to be Discarded"
+mode,s,h,"ql",,,"Mode"

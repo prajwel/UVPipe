@@ -1,0 +1,7 @@
+inputdatadir,f,a,"uvtOpticAssDistCorr_1.0",,,"Input directory path"
+outdir,f,a,".",,,"Output directory path"
+frames2discard,i,a,0,,,"Number of frames to discard"
+frames2integrate,i,a,300,,,"Number of frames to integrate"
+clobber,b,a,y,,,"Overwrite output(y/n)"
+history,b,a,n,,,"Write history(y/n) :"
+mode,s,h,"ql",,,"Enter mode"

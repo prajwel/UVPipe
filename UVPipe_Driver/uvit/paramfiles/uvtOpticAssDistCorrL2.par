@@ -1,0 +1,6 @@
+inputdatadir,f,a,"uvtDetectDistCorr_l2_1.0",,,"Enter the path of Input Directory"
+caldbDir,f,a,"/raid-data1/data/astrowrk/uvit/UVIT_chain_28march/UVIT_VERSION_0.2/CALD_IIA_15sep15/",,,"Enter the absolute path of CalDb Directory"
+outdir,f,a,".",,,"Enter the absolute path of output directory"
+clobber,b,a,y,,,"Overwrite output[y/n]"
+history,b,a,n,,,"Write history[y/n] :"
+mode,s,h,"ql",,,"Enter mode"

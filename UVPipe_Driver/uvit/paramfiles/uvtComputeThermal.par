@@ -1,0 +1,12 @@
+DataIngestDir,f,a,"DataIngest_0.3",,,"path of DataIngest directory"
+frameIntegrationDir,f,a,"DataIngest_0.3",,,"path of FrameIntegration directory"
+
+caldbpath,f,a,"/raid-data1/data/astrowrk/uvit/UVIT_chain_28march/UVIT_VERSION_0.2/CALDB/uvit",,,"path of caldb directory"
+inputdir,f,a,"uvtComputeJitter_0.3",,,"Input Directory Path"
+
+HKpath,f,a,"/raid-data1/data/astrowrk/uvit/UVIT_chain_28march/UVIT_VERSION_0.2/OBS67_level1_backup/uvit/aux/aux2/AS1A06_303T26_0000000067uvt_level1.lbt",,,"Enter the absolute path of HK file"
+outdir,f,a,".",,,"Enter the absolute path of output Directory"
+freqDomainFilter_Flag,i,a,1,,,"Enter the value for the freqDomainFilte"
+clobber,b,a,y,,,"Overwrite output[y/n]"
+history,b,a,n,,,"Write history[y/n] :"
+mode,s,h,"ql",,,""

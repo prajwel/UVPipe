@@ -1,0 +1,7 @@
+inputdatadir,f,a,"uvtMaskBadpix_1.0",,,"Input Directory Path"
+threshold_cr,r,a,300000,,,"Cosmic Ray threshold"
+outdir,f,a,".",,,"Output directory path"
+numFrames,i,a,2,,,"Number of previous frames to be Compared"
+clobber,b,a,y,,,"Overwrite output (y/n)"
+history,b,a,n,,,"Write history (y/n)"
+mode,s,h,"ql",,,"Enter mode"

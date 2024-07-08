@@ -1,0 +1,6 @@
+framelistDir,f,a,"uvtOpticAssDistCorr_l2_1.0",,,"Enter the path of Input Directory"
+outdir,f,a,".",,,"Enter the absolute path of output directory"
+RASfile,f,a,"/raid-data1/data/astrowrk/uvit/UVIT_chain_28march/UVIT_VERSION_0.2/New_output/uvit/ORBNO/uvtN/uvitN.01/uvtRelAspCal_1.0/AS1A06_303T26_0000000069uvt_l2_ras.fits",,,"Enter the absolute  path for the RAS file"
+clobber,b,a,y,,,"Overwrite output[y/n]"
+history,b,a,n,,,"Write history[y/n] :"
+mode,s,h,"ql",,,"Enter mode"

@@ -1,0 +1,823 @@
+ /* 
+ * File:   uvtUtils.h
+ * Authors:: Preeti Tahlani ,Dhruv Shelat,Sanjay K Singh, Arvind K Singh
+ * Scientific Contributers: Swarna k Ghosh, Shyam.N Tandon
+ *
+ * Created on September 2, 2013, 3:26 PM
+ */
+
+#ifndef COMMON_H
+#define	COMMON_H
+
+//**********************Include files***********************
+#include<pil.h>
+#include<iostream>
+#include<fitsio.h>
+#include<cstdlib>
+#include<cstring>
+#include<string>
+#include<stdarg.h>
+#include<cmath>
+#include<dirent.h>
+#include<unistd.h>
+#include<strings.h>
+#include<sys/types.h>
+ #include<sys/stat.h>
+#include<vector>
+#include<cstdio>
+#include<iomanip>
+
+
+//****************Macro variable definitions****************
+#define NO_FIXEDMODULES_PC_RA 13
+#define NO_FIXEDMODULES_IM_RA 11
+#define TIME_MISMATCH_FILENAME "Driver_reference.txt"
+#define TOTAL_NUV_FILENAME "Driver_Total_NUV_SCIENCEDATAFILE.txt"
+#define MAX_XLOC_TOCHECKED 130
+#define VERSION "6.3"
+#define NAMESIZE 1024         //size of a filename/modulename
+#define  ARCSEC_TOLERANCE 5.0
+#define SIGNALFRAMELIST             "SignalFrameList.txt"
+#define EXPOSUREFRAMELIST       "ExposureFrameList.txt"
+
+#define EXPOSUREFRAMEDIR          "ExposureFrames"             //Name for the exposure frame directory
+#define SIGNALFRAMEDIR                "SignalFrames"                  //Name for the signal frame directory 
+
+#define YES 1
+#define NO 0
+
+
+#define TOTALDAYS_IN_YEAR 31536000
+#define ORIGIN "UVIT-POC"
+
+#define TIME_COLNAME "Time"
+
+#define ENV_PFILES "PFILES"
+
+#define SHORT_STR_SIZE 25
+#define SATURATED_PIXEL_THR 50000 
+#define SATURATED_NEIGHBOUR_PIXEL_THR 2800 
+#define SATURATED_PIX_ENVELOPESIZE 8
+#define NEIGHBOUR_PIX_MULTFACTOR 0.05
+#define PC 0
+#define IM 1
+#define INVALID_PIX_VALUE -9999
+#define INITIALIZATION_VALUE -9999
+#define IMG_DIM_DI  512
+#define MIN_MULTNO 1.0001
+#define NUM_LOC_TOT_FULLLINE 8
+#define FIXED_VAL_FOR_JUNK 1350
+ #define  ROW1 44;
+    #define ROW2 108;
+    #define ROW3 172;
+    #define ROW4 236;
+    #define ROW5 300;
+    #define ROW6 364;
+    #define ROW7 428;
+    #define ROW8 412;
+   
+    #define ROWH1 12;
+    #define ROWH2 76;
+    #define ROWH3 140;
+    #define ROWH4 204;
+    #define ROWH5 268;
+    #define ROWH6 332;
+    #define ROWH7 495;
+    #define ROWH8 460;
+//typedef struct Rows_tocheck{
+////    int r1=44;
+////    int r2=108;
+////    int r3=172;
+////    int r4=236;
+////    int r5=300;
+////    int r6=364;
+////    int r7=428;
+////    int r8=412;
+////   
+////    int r1h=12;
+////    int r2h=76;
+////    int r3h=140;
+////    int r4h=204;
+////    int r5h=268;
+////    int r6h=332;
+////    int r7h=495;
+////    int r8h=460;
+//    
+//};
+using namespace std;
+int  checkMasterClock(char *filename  ,string &clockMaster,int &cnt_VIS,int &cnt_FUV,int &cnt_NUV,long &cnt_Tot);
+//*******************Function declarations*******************
+/**
+ * Function returns true if the File Exists
+ * @param filename
+ * @return 
+ */
+bool FileExists(char *filename);
+//----------------------------------------------------------------
+
+/**
+ * Function returns true if the directory exists
+ * @param dirname
+ * @return 
+ */
+bool DirExists(char *dirname);
+int compute_Rotmatrix(double &q1,double &q2,double &q3,double &q4,double &theeta,double &phi,double &psi );
+//----------------------------------------------------------------
+
+/**
+ * Copies n keywords from fits file pointed by fptr1 to fptr2 
+ * @param fptr1
+ * @param fptr2
+ * @param n
+ * @param ...
+ */
+int copyKeywords(fitsfile *fptr1,fitsfile *fptr2,int n,...);
+ int readpathOfRASfile(string sciencedataFile,char *channel,string &output_RasFile_Dir,string &outputrasFile);
+int  checkMasterClock(char *filename  ,string &clockMaster);
+    
+//------------------------------------------------------------------
+
+/**
+ * Function to copy user keywords from input fitsfile to output fitsfile.
+ * It works on the current HDUs of both fits file 
+ * @param fin
+ * @param fout
+ * @return 
+ */
+int copyUserKeywords(fitsfile *fin,fitsfile *fout);
+string getSerialNo(int &p);
+
+/**
+ * Function to print error based on fits error code
+ * @param status
+ * @param errstring
+ */
+void printerror(int status,string errstring="Error");
+//------------------------------------------------------------------
+
+void printError(int,char *errmsg);
+
+void printError(int status,char *errmsg,char *fitsname);
+/**
+ * Function to join two or more strings.
+ * @param outstring : the output string. It should have enough space to
+ * hold the concatenated string
+ * @param n : number of strings to be joined
+ * @param ... : strings to join
+ * @return  new concatenated string
+ */
+void joinStrings(char *outstring,int n,...);
+
+int writeColumnsToFITS(char *filename,int hduno,int n, ...);
+ int readColumnsFromFITS(char *filename,int hduno,int n, ...);
+ string  get_process_name_by_pid(const int pid);
+//-------------------------------------------------------------------
+
+/**
+ * Function to delete non empty directory recursively
+ * @param dir
+ * @return 
+ */
+int deleteDir(char *dir);
+int Applypadding (float *inputArray , int input_xsize,int input_ysize,float *outputArray,int padding_xsize ,int padding_ysize);
+int  copyUsrkeywrdsTovect(fitsfile *fin , vector<string> &strvect);
+ int writeUsrkeywordsFrmvect(char *filename,vector<string> &strvect);
+// int updateKeywords(char *filename,char *origin);
+//-------------------------------------------------------------------
+
+/**
+ * Function to filter out . and .. directories from output of scandir function
+ * @param dptr
+ * @return returns 0 for . and .. directories and 1 for others
+ */
+int defaultfilter(const struct dirent *dptr);
+//-------------------------------------------------------------------
+
+/**
+ * Parses the string depending on the delimiter
+ * @param str
+ * @param delim
+ * @param substr
+ * @return 
+ */
+int parseString(string str,char delim,vector<string> &substr);
+//-------------------------------------------------------------------
+
+/**
+ * Function to change the extension of file from old to new extension
+ * @param file
+ * @param oldExt
+ * @param newExt
+ */
+int updateFilenameExtension(string *file,  string oldExt, string newExt);
+
+//-------------------------------------------------------------------
+
+/**
+ * Function to get start and end of bins from an input string
+ * @param ebins
+ * @param start
+ * @param end
+ * @param nebins
+ * @return
+ */
+int getbins(char *ebins,double *start,double *end,int nebins);
+//-------------------------------------------------------------------
+
+/**
+ * Function to get number of bins separated by comma from input string or as 
+ * first line in an ascii input file  
+ * @param bins
+ * @return 
+ */
+int get_nbins(char *bins);
+//-------------------------------------------------------------------
+
+/**
+ * Function to dynamically allocate memory to 2D array 
+ * @param h
+ * @param w
+ * @return 
+ */
+template<class T> T **allocateMemory(long h,long w);
+//-------------------------------------------------------------------
+
+/**
+ * Function to initialize each element of array with val 
+ * @param array
+ * @param size
+ * @param value
+ * @return 
+ */
+template<class T> int initArray(T *array,long size, T value);
+//-------------------------------------------------------------------
+
+/**
+ * Function to free dynamically allocated 2D memory
+ * @param array
+ * @param height
+ * @param width
+ */
+template<class T> void freeMemory(T **array,long height,long width);
+//-------------------------------------------------------------------
+
+/**
+ * Function to compute rms of an array
+ * @param arr
+ * @param size
+ * @return 
+ */
+template<class T> double getrms(T *arr,long size);
+//-------------------------------------------------------------------
+
+/**
+ * Function to compute mean of an array
+ * @param arr
+ * @param size
+ * @return 
+ */
+template<class T> double getmean(T *arr,long size);
+
+template<class T> void  swap1(T &a,T&b);
+//-------------------------------------------------------------------
+
+/**
+ * Function to compute maximum value from an array
+ * @param array
+ * @param size
+ * @param maxval
+ * @return 
+ */
+template<class T> long max(T *array,long size,T *maxval);
+//-------------------------------------------------------------------
+
+/**
+ * Function to compute minimum value from an array
+ * @param array
+ * @param size
+ * @param minval
+ * @return 
+ */
+template<class T> long min(T *array,long size,T *minval);
+//-------------------------------------------------------------------
+
+/**
+ * Function to compute Standard deviation for an array
+ * @param h
+ * @param w
+ * @return 
+ */
+template<class T> double getSD(T *array,long size);
+
+void RemoveDuplicateStringsFromVECT(vector<string> &strvect);
+//****************Function Definitions************************
+template<class T>
+T **allocateMemory(long h,long w){
+    T **array;
+    array=new T*[h];
+    if(array==NULL)  return NULL;
+    for(long i=0;i<h;i++){
+        array[i]=new T[w]; 
+        if(array[i]==NULL)
+            return NULL;
+    }
+    return array;
+}
+//-------------------------------------------------------------------
+template<class T>
+int initArray(T *array,long size, T value){
+    for(long i=0;i<size;i++){
+        array[i]=value;
+    }
+    return 0;
+}
+//-------------------------------------------------------------------
+template<class T>
+void freeMemory(T **array,long height,long width)
+{ for(long i=0;i<height;i++)
+   delete[] array[i];
+  delete[] array;
+}
+//-------------------------------------------------------------------
+ template<class T>
+double getrms(T *arr,long size){
+    
+ 
+    double sum=0,rms=0;
+  //    cout<<"The size "<<size<<endl;
+   // double mean=getmean(arr,size);
+  //  cout<<"MEAN:::"<<mean<<endl;;
+    for(long i=0;i<size;i++){
+     
+     sum=sum+(arr[i])*(arr[i]) ;
+    }
+//    cout<<"The Sum is "<<sum<<endl;
+    sum=sqrt(sum);
+    double t=(double)sqrt(size);	
+    rms=sum/t;
+    return rms;
+}
+//-------------------------------------------------------------------             
+template<class T>
+double getmean(T *arr,long size){
+    long i;
+    int cnt=0;
+    double sum=0,mean=0;
+    for(i=0;i<size;i++){
+        if(arr[i]!=INVALID_PIX_VALUE){
+        sum=sum+arr[i];
+        cnt++;
+        }
+    }
+    mean=sum/(double)cnt;
+    return mean;
+}
+//-------------------------------------------------------------------
+template<class T>
+long max(T *array,long size,T *maxval){
+    long index=0;
+    if(size>0){
+        *maxval=array[0];
+        for(int i=0;i<size;i++){
+            if(*maxval<array[i]){
+                *maxval=array[i];
+                index=i;
+            }
+        }
+        return index;
+     }
+    else
+        return -1;
+}
+
+//-------------------------------------------------------------------
+template<class T>
+long min(T *array,long size,T *minval){
+    long index=0;
+    if(size>0){
+        *minval=array[0];
+        for(int i=0;i<size;i++){
+            if(*minval>array[i]){
+                *minval=array[i];
+                index=i;
+            }
+        }
+        return index;
+     }
+    else
+        return -1;
+}
+
+//---------------------------------------------------------------------------
+template<class T> double getSD(T *array,long size){
+    double mean=getmean(array, size);
+    //cout<<" The mean "<<mean<<endl;
+    double sum=0;
+    double sd=0;
+    
+    int cnt=0;
+    for(int i=0;i<size;i++){
+        if(array[i]!=INVALID_PIX_VALUE ){
+            
+        sum=sum+((array[i]-mean)*(array[i]-mean));
+        cnt++;
+        }
+    }
+    
+    sd=sqrt(sum/cnt);
+    return sd;
+}
+
+template<class T> void  swap1(T &a,T&b){
+    T temp;
+    temp=a;
+    a=b;
+    b=temp;
+}
+//---------Quaternion related structure and functions---------
+struct Q{
+    double q1,q2,q3,q4;   //quaternion representation  q1-scaler
+    double theta,x,y,z;   //for axis angle representation
+    double mod;             //modulus of quaternion
+    bool norm,AxisAngle,qflag;           
+    Q(); 
+    Q(double a, double b, double c, double d);
+    Q(const Q &q);
+    void readQ();
+    void readAxisAngle();
+    int getAxisAngle();
+    int getQuat();
+    void display();
+    void normalize();   //to make modulus 1
+ };
+//-------------------------------------------------------------------
+struct Axis{
+    double x,y,z,mod;
+    bool norm;
+    Axis(){ x=0; y=0; z=0; norm=false;}
+    Axis(double a, double b, double c){
+        x=a; y=b; z=c; norm=false;
+    }
+    double getMod();
+    void normalize();   //to make modulus one
+    void display();
+    void update(double a,double b,double c);
+};
+//-------------------------------------------------------------------
+
+/**
+ * Function to get the product of two float matrices A and B. The product is given
+ * in matric C. Size of A if axb, size of B is bxc and size of C is axc
+ * @param A
+ * @param B
+ * @param C
+ * @param a
+ * @param b
+ * @param c
+ */
+void matrix_product(float **A,float **B,float **C,int a,int b,int c);
+//-------------------------------------------------------------------
+
+/**
+ * Function to multiply two quaternions
+ * Q1 x Q2 = Q3
+ * @param Q1
+ * @param Q2
+ * @param Q3
+ */
+void quaternion_product(Q &Q1, Q &Q2, Q &Q3);
+//-------------------------------------------------------------------
+
+/**
+ * Function to return inverse of a quaternion
+ * @param q
+ * @return 
+ */
+Q &Inverse(Q &q);
+//-------------------------------------------------------------------
+
+/**
+ * Transform the axis to a different frame using the given quaternion
+ * @param axis
+ * @param q
+ * @param axisrot
+ * @return 
+ */
+int rotate(Axis &axis, Q &q, Axis &axisrot);
+//-------------------------------------------------------------------
+
+/**
+ * Compute Camera coordinates (theta_x,theta_y) using transformation qc from 
+ * average aspect file and RA DEC
+ * @param aspectfile : Average aspect file
+ * @param RA : RA in radians
+ * @param DEC : Declination in radians
+ * @param theta_x : In radians
+ * @param theta_y : In radians
+ * @return  
+ */
+int getCC(char *aspectfile,double RA,double DEC,double *theta_x,double *theta_y);
+//-------------------------------------------------------------------------------
+
+/**
+ * Function to check the validity of range of values for the given column in a given hdu
+ * @param fptr
+ * @param hdunum
+ * @param colname
+ * @param val1
+ * @param val2
+ * @return 0 for valid, 1 for invalid, -1 for error
+ */
+template<class T>
+int checkRangeValidity(fitsfile *fptr,int hdunum,char *colname,T *val1,T *val2,int num, bool *valid){
+    int status=0;
+    int hdutype;
+    for(int i=0;i<num;i++){
+        if(val1[i]>=val2[i]){
+            cout<<"\n***Improper range given***\n";
+            return -1;
+        }
+    }
+    //cout<<"\nInput Range:"<<val1<<"-"<<val2;
+    fits_movabs_hdu(fptr,hdunum,NULL,&status);
+    if(status){
+        fits_report_error(stderr,status);
+        return -1;
+    }
+    fits_get_hdu_type(fptr,&hdutype,&status);
+    if(status){
+        fits_report_error(stderr,status);
+        return -1;
+    }
+    if(hdutype==IMAGE_HDU){
+        cout<<"\n***Function valid only for Table HDU-checkRangeValidity()***\n";
+        return -1;
+    }
+  
+    int colnum;
+    fits_get_colnum(fptr,CASEINSEN,colname,&colnum,&status);
+    if(status){
+        fits_report_error(stderr,status);
+        return -1;
+    }
+    cout<<"\nColumn number for "<<colname<<" is "<<colnum;
+    int typecode=0;
+    fits_get_eqcoltype(fptr,colnum,&typecode,NULL,NULL,&status);
+    if(status){
+        fits_report_error(stderr,status);
+        return -1;
+    }
+    
+    long nrows;
+    fits_get_num_rows(fptr,&nrows,&status);
+    if(status){
+        fits_report_error(stderr,status);
+        return -1;
+    }
+    
+    switch(typecode){
+        case TBIT:   
+        case TBYTE:  
+        case TSBYTE:  
+        case TUSHORT:
+        case TSHORT:  
+        case TFLOAT:  
+        case TINT:
+        case TUINT:   
+        case TDOUBLE:
+        case TULONG:
+        case TLONGLONG:
+        case TLONG:    
+            break;
+        default: cout<<"\nThis function does not supports typecode "<<typecode;
+            return -1;
+    }
+        
+    double *array=(double *)malloc(nrows*sizeof(double));
+    if(array==NULL) {
+        cout<<"***Out of memory error-checkRangeValidity()***\n";
+        return -1;
+    }
+    
+    if(nrows>0){
+        long firstrow=1;
+        long firstelem=1;
+        cout<<"\nReading column number "<<colnum;
+        fits_read_col(fptr,TDOUBLE,colnum,firstrow,firstelem,nrows,NULL,array,NULL,&status);
+        if(status){
+            fits_report_error(stderr,status);
+            return -1;
+        }
+        
+        T maxval=0,minval=0;
+        max(array,nrows,&maxval);
+        min(array,nrows,&minval);
+        free(array);
+        for(int i=0;i<num;i++){
+            if(val1[i]>maxval || val2[i]<minval)
+                valid[i]=false;
+            
+            else
+                valid[i]=true;
+        }
+    }
+    return 0;
+               //invalid as there is no data
+ }
+//-------------------------------------------------------------------------------------
+
+//-------------------------------------------------------------------------------------
+/**
+ * Function to write history to all HDUs of the file
+ * @param filename
+ * @param vhistory
+ * @return 
+ */
+int writeHistory(char *filename,vector<string> &vhistory);
+//---------------------------------------------------------------------------------------
+
+//for date , checksum, origin, creator
+/**
+ * Function to add keywords DATE, CREATOR, ORIGIN and CHECKSUM to all hdus of file
+ * @param filename
+ * @param creator
+ * @return 
+ */
+int updateKeywords(char *filename,char *creator);
+//-----------------------------------------------------------------------------------------
+
+
+/**
+ * Writes date, checksum, origin , creator to currently opened HDU
+ * @param fptr
+ * @param creator
+ */
+void writeCommonKeywords(fitsfile *fptr,char *creator);
+//-------------------------------------------------------------------------
+
+
+int writeImg(char *file, long *img,int m,int n);  //just to check;
+int writeImg(char *file, float *img,int m,int n);  //just to check
+int writeArray(char *file,float **array,int m,int n);
+
+void checkPFILESenv();
+
+/**
+ * Function to check 
+ * @param modulename
+ */
+void checkParFile(char *modulename);
+
+/**
+ * The function checks whether the array has been allocated memory or not in case of dynamic memory allocation
+ * @param arr1
+ * @param arrname
+ */
+template<class T>
+void checkMemoryAvailability(T* arr1,char *arrname){
+    if(arr1==NULL){
+        cerr<<endl<<"***Memory Allocation failed for "<<arrname<<"***"<<endl;
+        exit(EXIT_FAILURE);
+    }
+}
+
+/**
+ * Function to fit a linear curve of y=mx+c 
+ * @param x_val  - x values
+ * @param y_val  - y values
+ * @param n     - number of samples
+ * @param cf      - output coefficients m and c [ cf[0] -  c (offset), cf[1] - m (slope)]
+ *                              cf is an array of size 2.
+ */
+ void linear_fit(double * x_val, double * y_val, int n, double *cf);
+
+/**
+ * Function to search a file containing 'pattern' in the directory 'dirname'
+ * @param dirname - directory to search for
+ * @param pattern - pattern in the filename to search for
+ * @return 
+ */
+// const char* searchFile(char* dirname ,char* pattern);
+ string searchFile(char* dirname ,char* pattern);
+int  getFileNamesfrmDir(char* dirname ,char* pattern,vector<string> &filename);
+
+ /**
+  * Function to retrieve a keyword value from fitsfile
+  * @param file - char *
+  * @param keyname - char *
+  * @param typecode - TFLOAT, TINT, TDOUBLE etc
+  * @param hdunum - int
+  * @param val - T type
+  */
+  template<class T>
+ void getKeywordVal(char *file, char *keyname, int typecode, int hdunum, T &val);
+
+   /**
+   * function to retrieve a string keyword value from file
+   * @param file - char*
+   * @param keyname - char *
+   * @param hdunum - int
+   * @param val - char *  [value is returned in this]
+   */
+  void getKeywordVal(char *file, char *keyname, int hdunum,char *val);
+ 
+  //function to retrieve a keyword value from fits file
+  //The value will be retrieved in val variable
+ //The val variable must be of the type of the keyword value
+ template<class T>
+ void getKeywordVal(char *file, char *keyname, int typecode, int hdunum, T *val){
+     fitsfile *fptr;
+     int status=0;
+     fits_open_file(&fptr,file,READONLY,&status);   printError(status,"");
+     fits_movabs_hdu(fptr,hdunum,NULL,&status);   printError(status,"");
+     fits_read_key(fptr,typecode,keyname,val,NULL,&status);   printError(status,"");
+     fits_close_file(fptr,&status);   printError(status,"");
+ }
+  
+  //------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ /**
+  * Function to create the output directory wrt clobber input
+  * @param clobber - flag for overwrite
+  * @param outputpath - directroy to be created
+  */
+ int createOutputDirectory(int clobber, char *outputpath);
+ //------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 
+#define BOOL 1
+#define INT 2
+#define REAL 3
+#define REAL4 4
+#define STRING 5
+#define FNAME 6
+
+ /**
+  * Function to read parameters using PIL
+  * @param argc - Number of command line parameters
+  * @param argv - Input parameters
+  * @param n - Number of parameters to be read through this function
+  * @param ...  - This should in sets of three. For each parameter provide three arguments viz. datatype, 
+  *                            param_name, variable_name.
+  *                            datatype - It is integer type which can be one of "BOOL", "INT", "REAL", "REAL4", STRING","FNAME"
+  *                            param_name - Name of the parameter in parameter file. It is of char* type
+  *                            variable_name - The variable in which the parameter has to be read. It is void* type. It should 
+  *                            be the pointer to a variable in which the parameter value has to be stored.  
+  * @return  - Returns 0 on success, non-zero otherwise
+  */
+ int readParams(int argc, char **argv, int n, ...);
+  //------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 
+ /**
+ * Function to read keywords from fitsfile
+ * @param fitsfilename
+ * @param hdunumber
+ * @param n
+ * @param ... - Argument list in the sets of datatype (of keyword), keyword name and variable to store 
+ *                      the keyword value
+ * @return 
+ */
+int readKeywords(char *fitsfilename, int hdunumber,int n,...);
+//----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ 
+/**
+ * Function to update keywords in fitsfile
+ * @param fitsfilename
+ * @param hdunumber
+ * @param n
+ * @param ... - Argument list in the sets of datatype (of keyword), keyword name and variable to store 
+ *                      the keyword value
+ * @return 
+ */
+int updateKeywords(char *fitsfilename, int hdunumber,int n,...);
+ int editframe(float *frmdata,int height,int width,float thrval,bool &flag_All,int colnum);
+ int envelopeCheckForBrightPix(float *Array,int XSIZE,int YSIZE,int Xloc,int Yloc,int window,float thrval);
+//----------------------------------------------------------------------------------------------------------------------------------------------------------------------
+string convertIntToStr(int val);
+string convertFloatToStr(float val);
+ int extractTars(string tar_name,string &fileoutname, string &orbitnum);
+ int extractZip(string tar_name,string &fileoutname,string &orbitnum);
+ int extractTars(string tar_name,string &fileoutname);
+int getTemp (char *lbtfile,char *detector,double *time_lbt,float *insideTemp,float *outsideTemp,long nrows_lbt);
+int readNumRowsFromFits(char *filename,int hduno,long &numrows);
+int readQEMCPFile (char *qeFile,char *detector, long nrows,float *temp,float *f0,float *f1,float *f2,float *f3,float *f4,float*f5,float*f6,float *f7);
+int performUnitConversionIM(float *frmdata, float *expdata,double  intgrntime,int sizex,int sizey);
+int performCorrectionIM(float *frmsigdata, float *frmexpdata, float *badpixarry,int sizex,int sizey,double  intgrntime);
+int performCosmicRayCorrIM(float *frmsigdata, float *frmexpdata,int sizex,int sizey,float threshold_cr);
+int performSubDivisionIM(float *frmsigdata,int sizex,int sizey,float *subdivideddata,int size_subdivx,int size_subdivy);
+int readImage(char * caldb_file,int hduno,float *frm_data ,int xsize,int ysize);
+int darkFrameSubtraction (float *Array , float *frame_data,int xsize,int ysize);
+int performFlatFieldCorrIM(float *frmsigdata,float *flatfieldarry,int sizex,int sizey);
+int  performQEMCPcorrection(float *sigdata,int xsize,int ysize,double fact);
+int ReadAtd_status(char * filename ,double &frmTime,int &att_bit_0,int &att_bit_1,int &att_bit_2);
+//int compressTars(string tar_name,string directoryname);
+int compressZip(string tar_name,string directoryname,string pathtar);
+int compressTars(string tar_name,string directoryname,string pathtar);
+int getNearByValues(double *arr, double *arr_output,long size,float thrval);
+long checkAvailableSpace(const char *path);
+string ReturnYorN(int num);
+int ApplyBinning (float* inputarray , int in_xsize , int in_ysize , float* outputarray , int out_xsize , int out_ysize,float *counterArray);
+int Convert_J2000_To_ObervationRADECVal(float dayRef,float RA_orig,float DEC_orig,float &RAdiff,float &DECdiff);
+int ConvertDateToMJD(float day,float  month ,float year);
+int ApplySubSampling_Addition (float* inputarray , int in_xsize , int in_ysize , float* outputarray , int out_xsize , int out_ysize);
+#endif	/* COMMON_H */
+
+

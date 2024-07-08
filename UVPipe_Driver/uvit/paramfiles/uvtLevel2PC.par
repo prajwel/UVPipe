@@ -1,0 +1,119 @@
+ZipFlag,b,ql,n,,,"Input leve1l is in Zip format or not?(1 for ZIP format/0 is for TAR format)"
+level1indir,f,ql,"20161102_G06_157T01_9000000772_level1",,,"Enter level directory path"
+caldbdir,f,ql,"NEWCALDB",,,"Enter caldb directory path"
+level2outdir,f,ql,"originalFUV18",,,"Enter level2 directory"
+utcFlag,b,ql,n,,,"UTC correction to be done or not?"
+crcflag,b,ql,n,,,"CRC check to be done or not? !! DANGER !! DO NOT CHANGE !"
+pathToOutputTar,s,ql,"outtar",,,"Enter of output tar file path"
+channel,s,ql,"FUV",,,"Channel (NUV/FUV/VIS)"
+parityFlag,i,a,2,,,"Parity check(1 for All three words)/(2 for only X,Y)"
+history,b,ql,y,,,"History (y/n) :"
+clobber,b,ql,y,,,"Clobber(y/n) :"
+qemcpFlag,b,a,LastFileFlag=,,,"Run Correction for Effects of temperature on QE and MCP (y/n)"
+unTar_flag,b,ql,y,,,"Given Level1 input path is directory(not a TAR file)? (y/n)"
+error_per,r,h,5,,,"Percentage error allowed for matching stars"
+startTime,r,h,-9999,,,"start_time->"
+endTime,r,h,-9999,,,"end_time->"
+GTI_FLAG,b,a,n,,,"GTI filtering to be done or not(y/n)"
+GenMatchStarsFile_flag,b,a,1,,,"Generate Matched Stars files after Drift Computetion(y/n] :"
+QEMCP_tobedone,i,ql,0,,,"QEMCP Correction to be run or not?"
+CentCorr_tobedone,i,ql,0,,,"Centroid Correction to be run or not?"
+CentBias_tobedone,i,ql,0,,,"Centroid Bias to be done or not?"
+frameIntFlag,i,ql,0,,,"frame integration to be done or not?"
+DetectDist_tobedone,i,ql,1,,,"Detect Distortion Correction  to be done or not?"
+OpticDist_tobedone,i,ql,1,,,"Optical Distortion Correction to be done or not?"
+
+
+#DataIngest
+dropframe,b,ql,n,,,"Enter y for drop frame, n for drop packet (y/n)"
+
+#uvtFilterBadpix
+thresholdMultph,r,ql,9999,0.0,10000.0,"Enter threshold for multiple photon event"
+
+#uvtUnitConversion
+#unitConversionFlag,b,ql,y,,,"Run Unit Conversion (y/n)"
+
+#uvtFlatFieldCorrection
+flatfieldFlag,b,ql,2,,,"Run Flat Field Correction module (y/n)"
+
+
+#uvtCosmicRayCorr
+#cmpFrames,i,ql,10,,,"Enter The value of Compare frames for the Cosmic Ray"
+thr_Two_cr,r,ql,9999,,,"Enter _ST_ in threshold = AVG+N*sqrt(avg_events)+ST/(sqrt(avg_events)) to identify Cosmic Ray affected frame"
+#thrVal,r,ql,7720,,,"Enter threshold for Cosmic Ray Correction"
+thr_One_cr,r,ql,9999,,,"Enter _N_ in threshold=AVG+N*sqrt(avg_events)+ST/(sqrt(avg_events)) to identify Cosmic Ray affected frame"
+
+#uvtFindStarCentroid
+algoFlag,i,a,0,,,"Enter Algorithm number for finding the stars and centroid(1 for SAC algorithm)"
+minimumTargetedStars,i,a,5,,,"Enter Minimum limit for the number of the stars"
+threshold,r,a,50,,,"Enter multiplication factor for RMS for peak(star) detection"
+refinedWinSize,i,ql,15,,,"Enter refined window Size for star detection"
+centroidWinSize,i,ql,3,,,"Enter Centroid window Size for centroid detection"
+StarDetectionCentroidPriThr,r,ql,10,,,"Enter Threshold Value :"
+StarDetectionCentroidSecThr,r,ql,50,,,"Enter Secondary Threshold Value :"
+StarDetectionCentroidSqrSize,i,q,24,,,"Enter algorithm square size :"
+
+#uvtPixPadding
+
+#uvtFrameIntegration
+framesDiscard,i,ql,2,,,"Enter the number of frames to discard"
+framesCompute,i,ql,9400,,,"Enter the number of frames to compute"
+FrameIntDim,i,ql,4800,,,"Enter frame size after frameIntegration"
+RegAvgfrmsize,i,ql,4800,,,"Enter final frame size after registration and averaging"
+flag_thetaComp,b,a,n,,,"Theta computation to be done or not:"
+
+
+#uvtRefFrame
+averageFactor,i,ql,1,,,"Enter frame count for averaging in ref. frame calculation"
+framesToBeDiscard,i,ql,0,,,"Enter number of frames to be Discarded in ref. frame calculation"
+
+#uvtComputeDrift
+diffDist,r,h,1,,,"Enter min  Distance value for pixel matching(for Compute Drift)"
+
+freqDomainFilterFlag,i,ql,0,,,"Enter 0 for fitting  data ,1 for applying filtering in drift calculation,2 for no fittingand no filtering"
+freqValue,r,ql,0.2,,,"Enter Freq value for removing High freq. component(for Compute Drift)"
+orderPitch,i,ql,1,,,"Enter order of polynomial for pitch computation"
+typeFiltering,i,ql,1,,,"Enter the value for the type of the Filtering(Enter 0 for low pass Filtering/Enter 1 for polinomial Fitting)"
+deltaTime,r,ql,200,,,"Enter time duration for fitting"
+
+orderYaw,i,ql,1,,,"Enter  order of polynomial for yaw computation"
+orderRoll,i,ql,1,,,"Enter order of polynomial for roll computation"
+fittingFlag,b,ql,y,,,"Fitting to be done or not(y/n)"
+gyroFile,f,ql,"gyro_temp.fits",,,"Enter the absolute path of gyrofile"
+RASfile,f,a,"out5962/uvit/05962/uvtV/uvtV.01/uvtComputeDrift_6.0/AS1G06_157T01_9000000772uvtVIIIM00F2_l2_dr.fits",,,"Enter the absolute  path for the RAS file"
+
+shiftRotDetAlgoFlag,i,ql,1,,,"Enter algorithm  number to be used for finding drift(1/3)"
+mode,s,h,"ql",,,"Mode"
+Write_todiskuc,i,a,0,,,"Want To Write output of unitConvertion to Disk?[1 for yes/o for No]"
+Write_todiskbp,i,a,0,,,"Want To Write output of badPixel to Disk?[1 for yes/o for No]"
+Write_todiskff,i,a,0,,,"Want To Write output of FlatField To Disk?[1 for yes/o for No]"
+
+Write_todiskpp,i,a,0,,,"Want To Write output of pixPadding  to Disk?[1 for yes/o for No]"
+Write_todisksd,i,a,0,,,"Want To Write output of subDivision to Disk?[1 for yes/o for No]"
+Write_todiskcr,i,a,0,,,"Want To Write output of CosmicRay to Disk?[1 for yes/o for No]"
+Write_todiskfi,i,a,1,,,"Want To Write output of Frameintegration to Disk?[1 for yes/o for No]"
+Write_todisksc,i,a,1,,,"Want To Write output of uvtFindStarCentroid  to Disk?[1 for yes/o for No]"
+Write_todiskqe,i,a,0,,,"Want To Write output of uvtQEMCPCorr  to Disk?[1 for yes/o for No]"
+Write_todiskdd,i,a,0,,,"Want To Write output of uvtDetectorDistortion  to Disk?[1 for yes/o for No]"
+Write_todiskod,i,a,0,,,"Want To Write output of Optical Distortion to Disk?[1 for yes/o for No]"
+Write_todiskde,i,a,1,,,"Want To Write output of Drift Exercise to Disk?[1 for yes/o for No]"
+Write_todiskRFC,i,a,1,,,"Want To Write output of Reference Frame Calculation to Disk?[1 for yes/o for No]"
+Write_todiskCentCorr,i,a,0,,,"Want To Write output of Centroid Correction to Disk?[1 for yes/o for No]"
+Write_todiskCentBias,i,a,0,,,"Want To Write output of Centroid Bias to Disk?[1 for yes/o for No]"
+Write_todisksnr,i,a,1,,,"Want To write output of shift and Rotate  to Disk?[1 for yes/o for No]"
+
+
+attitudefile,f,a,"1",,,"Attitude file"
+catalogpath,f,h,"/home/uvit/swarna/1368/20151229_G04_014T02_9000000232_level1/uvit/01368/aux/aux1/AS1G04_014T02_9000000232uvt_level1.att",,,"Catalog path"
+att_timecol,s,h,"Time",,,"Time column name in attitude file"
+att_qcol,s,h,"Q_SAT",,,"Quaternion column name in attitude file"
+threshold,r,a,,,,"Sigma criteria for star detection"
+refine_Window,i,a,1,,,"Refine Window Size"
+centroid_Window,i,a,3,,,"Centroid Window Size"
+database_name,s,ql,"USNOA2_VIS_GALEX_NUV_FUV_catalogue.db",,,"path of Database"
+search_algo_forFullFrameAst,i,ql,2,,,"Select a Search for catalogue(1 for Rectangle search/2 for circuler search/3 for rectangle search for FUV/4 for Circuler search for FUV/5 for rectagle select for NUV/6 for circuler select for NUV)"
+len_rect_a,s,ql,,,,"lengh for rectangle search"
+len_rect_b,s,ql,,,,"Width for rectangle search"
+Radi_search,s,a,"0.05",,,"Redius for circuler search"
+minimum_targetedstars,i,a,10,,,"Minimum limit for the number of the stars"
+

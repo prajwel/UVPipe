@@ -1,0 +1,2734 @@
+/* 
+ * File:   uvtFullFrameAst.cpp
+ * Authors:: Preeti Tahlani ,Dhruv Shelat,Sanjay K Singh, Arvind K Singh
+ * Scientific Contributers: Swarna k Ghosh, Shyam.N Tandon
+ *
+ * Created on September 2, 2013, 3:26 PM
+ */
+#include <uvtFullFrameAst.h>
+#include<uvtUtils.h>
+//#include <Attitude.h>
+#include <glog/logging.h>
+#include <caldb_Handler.h>
+#include<algorithm>
+#include<sqlite3.h>
+#include<spMatrix.h>
+#include<fstream>
+#include<caldb_Handler.h>
+#include<uvtUtils.h>
+#include<transform.h>
+using namespace std;
+bool compare (struct Star1 vect1 , struct Star1 vect2) ;
+bool compare (struct Star1 vect1 , struct Star1 vect2)
+{
+    return (vect1.intensity > vect2.intensity) ;
+}
+//Constructor -called when object is created
+uvtFullFrameAst:: uvtFullFrameAst() {
+    sprintf(modulename, "%s_%s", MODULENAME, VERSION);
+   
+}
+
+//Destructor
+uvtFullFrameAst::~ uvtFullFrameAst() {
+}
+
+//parameter reading
+int uvtFullFrameAst::read(int argc, char** argv) {
+    int status = EXIT_SUCCESS;
+
+    status = readParams(argc,argv,17,
+            FNAME,"indir",inputdatadir,
+            FNAME,"caldbDir",caldbDir,                                //CALDB dir is required for teldef file
+            FNAME,"outdir",outdir,
+            FNAME,"attitudefile",attitudefile,
+            FNAME,"ShiftNRotfile",shiftRotfile,
+            STRING,"att_timecol",&att_timecol,
+            STRING,"att_qcol",&att_qcol,
+            FNAME,"catalogpath",catalogpath,
+            BOOL,"clobber",&clobber,
+            REAL4,"threshold",&sd_multi_factor_default,
+            STRING,"Radi_search",rad_search,
+            INT,"minimum_targetedstars",&minimum_No_of_Stars,
+            INT,"refine_Window",&refine_Winsize,
+            INT,"centroid_Window",&centroid_Winsize,
+            STRING,"database_name",databasename,
+            BOOL,"history",&history,
+            STRING,"mode",mode);
+    if(status){
+        LOG(ERROR)<<"***Error reading parameters***";
+        return(EXIT_FAILURE);
+    }
+  if (PIL_OK != (status = PILInit (argc , argv)))
+    {
+        LOG (INFO) << "***Error Initializing PIL***" ;
+        return status ;
+    }
+      if (PIL_OK != (status = PILGetInt ("search_algo_forFullFrameAst" , &search_algo_ctlg)))
+        {
+            LOG (INFO) << endl << "***Error Reading search method" << search_algo_ctlg << "***" ;
+            return status ;
+        }
+    if(search_algo_ctlg==1 || search_algo_ctlg==3 || search_algo_ctlg==5)
+    {
+      if (PIL_OK != (status = PILGetString ("len_rect_a" , (char*)&len_a)))
+        {
+            LOG (INFO) << endl << "***Error Reading length of rectangle :" <<len_a << "***" ;
+            return status ;
+        }
+    
+      if (PIL_OK != (status = PILGetString ("len_rect_b" , (char*)&len_b)))
+        {
+            LOG (INFO) << endl << "***Error Reading width of rectangle:" << len_b << "***" ;
+            return status ;
+        }
+    
+    }
+    PILClose (status) ;
+    return status;
+}
+
+int uvtFullFrameAst::read(char *inputdatadir, char * caldbDir, char *shiftNRotfile,char *outdir, char *attitudefile,
+                                                char *att_timecol, char *att_qcol,char *catalogpath,float sd_mult_fact,int min_stars,int refine_win,int centroid_win,char *database_name,int algoval,char *len,char *wid, char *rad,int clobber, int history,int flag_Imageinput) {
+   
+    strcpy(this->inputdatadir, inputdatadir);
+    strcpy(this->outdir, outdir);
+    strcpy(this->shiftRotfile,shiftNRotfile);
+    strcpy(this->caldbDir, caldbDir);
+    strcpy(this->attitudefile,attitudefile);
+    strcpy(this->att_qcol,att_qcol);
+    strcpy(this->att_timecol,att_timecol);
+    strcpy(this->catalogpath,catalogpath);
+    strcpy(this->databasename,database_name);
+    strcpy(this->rad_search, rad);
+  
+    this->sd_multi_factor_default=sd_mult_fact;
+    this->refine_Winsize=refine_win;
+    this->centroid_Winsize=centroid_win;
+    this->minimum_No_of_Stars=min_stars;
+    this->search_algo_ctlg=algoval;
+    strcpy(this->len_a,len);
+    strcpy(this->len_b,wid);
+    this->clobber = clobber;
+    this->history = history;
+    this->flag_inputImage=flag_Imageinput;
+    return (EXIT_SUCCESS);
+}
+//Parameter file content Display
+
+void uvtFullFrameAst::display() {
+
+    LOG(INFO)<< "----------FULL FRAME ASTROMETRY PARAMETERS---------";
+    LOG(INFO)<< "Input Directory   : "<<inputdatadir;
+    LOG(INFO)<< "Caldb Directory  : "<<caldbDir;
+    LOG(INFO) <<"Attitude File  :  "<<attitudefile;
+    LOG(INFO)<< "Time column name   : "<<att_timecol;
+    LOG(INFO)<< "Quaternion column name : "<<att_qcol;
+    LOG(INFO)<< "Catalog Path  :  "<<catalogpath;
+    LOG(INFO)<< "Output Directory : " << outdir;
+    if (clobber == YES)
+       LOG(INFO)<< "Overwrite  : YES";
+    else
+        LOG(INFO)<< "Overwrite : NO";
+    if (history == YES)
+        LOG(INFO)<<"History  : YES";
+    else
+        LOG(INFO)<<"History  : NO";
+
+    LOG(INFO) <<"----------------------------------------------------------------------------------\n";
+
+}
+int uvtFullFrameAst::uvtFullFrmAstProcess() {
+    
+    LOG(INFO)<< "Full Frame Astrometry process started"; 
+    sprintf(moduleoutdir, "%s/%s/", outdir, modulename);
+    
+    if(createOutputDirectory(clobber, moduleoutdir))  
+        return (EXIT_FAILURE);
+ 
+    LOG(INFO)<<"\033[1;34m"<<inputdatadir<<"\033[0m";
+    string tempimagefile=" ";
+tempimagefile = searchFile(inputdatadir, "_sig_rg.fits");
+    if (tempimagefile==" ")
+    {
+      tempimagefile = searchFile(inputdatadir, "_sig_snl.fits");
+         if (tempimagefile==" "){
+             tempimagefile = searchFile(inputdatadir, "_ra-dec.fits");
+             if (tempimagefile==" "){
+                tempimagefile = searchFile(inputdatadir, ".fits");
+                 if (tempimagefile==" "){
+             LOG(ERROR)<<"Input Directory does not contain required file"<<endl;
+             return(EXIT_FAILURE);
+                 }
+             }
+             
+         }
+    }
+    
+    sprintf (imagefile_in, "%s/%s", inputdatadir, tempimagefile.c_str());              //input image file path
+    float RA_pnt,DEC_pnt;
+    char date_obs[FLEN_FILENAME];
+    readKeywords(imagefile_in,1,7,TSTRING,"NAMEPRFX",nameprefix,TINT,"XSIZE",&xsize,TINT,"YSIZE",&ysize,TFLOAT,"RA_PNT",&RA_pnt,TFLOAT,"DEC_PNT",&DEC_pnt,TSTRING,"DATE",date_obs,TFLOAT,"ROLLAPPLIED",&roll_angle);
+    LOG(INFO)<<date_obs;
+    
+    sprintf(imagefile_out,"%s/%s_as.fits",moduleoutdir,nameprefix);                 //ouptut image file path
+    //Read Attitude file 
+    
+    //till this.   
+    long fpixel[2] ;
+    fpixel[0] = fpixel[1] = 1 ;
+     fitsfile  *fin, *fout;    //, *fteldef;
+     int status = 0;
+     float *framedata= new float[xsize*ysize];
+    fits_open_file(&fin,imagefile_in,READONLY,&status);
+    printError(status, "File cannot be opened",imagefile_in);
+    datainfo.getInfo(fin);
+    
+  
+    fits_read_pix (fin , TFLOAT , fpixel , xsize*ysize , NULL , framedata , NULL , &status) ;
+     printError (status , "Error in reading the pixels from the input File" , imagefile_in) ;
+    // xsize=ysize=600;
+    sd_mul_factor = sd_multi_factor_default ;
+    refine_Winsize=refine_Winsize*xsize/PIX_PADD_SIZE;
+    centroid_Winsize=centroid_Winsize*xsize/PIX_PADD_SIZE;
+   status=findStar_algo1 (framedata);
+   if (status)
+    {
+        LOG (ERROR) << "Error in star detection algorithm" ;
+        return (EXIT_FAILURE) ;
+    }
+   double uvit_x,uvit_y,uvit_z,normal_x,normal_y,normal_z;
+   //added
+   LOG(INFO)<<Cx.size ();
+   //opening shift and Rotation file
+   float *X_loc_snr,*Y_loc_snr,*bad_flag_snr,*mult_phtn_snr,*enp_snr;
+   long nrows_snr;
+   if(flag_inputImage==0){
+//       for (int i=0;i<xsize*ysize;i++){
+//            framedata[i]=0.0f;
+//        }
+   fitsfile *fptr_snr ;//pointer to open shift and rotation file.
+   
+        fits_open_file (&fptr_snr , shiftRotfile , READWRITE , &status) ;
+        printError (status , " Error in opening file " , shiftRotfile) ;
+        fits_movabs_hdu (fptr_snr , 2 , NULL , &status) ;
+        printError (status , "Error in moving to HDU " , shiftRotfile) ;
+        fits_get_num_rows (fptr_snr , &nrows_snr , &status) ;
+        printError (status , "Error in reading the number of rows" , shiftRotfile) ;
+        X_loc_snr= new  float[nrows_snr];
+        Y_loc_snr= new float[nrows_snr];
+        bad_flag_snr = new float[nrows_snr];
+        mult_phtn_snr= new float[nrows_snr];
+        enp_snr= new float[nrows_snr];
+        fits_read_col (fptr_snr , TFLOAT , 5 , 1 , 1 , nrows_snr  , NULL , Y_loc_snr , NULL , &status) ;
+        printError (status , "Error in reading the number of rows" , shiftRotfile) ;
+        fits_read_col (fptr_snr , TFLOAT , 4 , 1 , 1 , nrows_snr  , NULL , X_loc_snr , NULL , &status) ;
+        printError (status , "Error in reading the number of rows" , shiftRotfile) ;
+        fits_read_col (fptr_snr , TFLOAT , 8 , 1 , 1 , nrows_snr  , NULL , bad_flag_snr , NULL , &status) ;
+        printError (status , "Error in reading the number of rows" , shiftRotfile) ;
+        fits_read_col (fptr_snr , TFLOAT , 9 , 1 , 1 , nrows_snr  , NULL , mult_phtn_snr , NULL , &status) ;
+        printError (status , "Error in reading the number of rows" , shiftRotfile) ;
+         fits_read_col (fptr_snr , TFLOAT , 10 , 1 , 1 , nrows_snr  , NULL , enp_snr , NULL , &status) ;
+        printError (status , "Error in reading the number of rows" , shiftRotfile) ;
+        fits_close_file (fptr_snr , &status) ;
+        printError (status , "Error closing the file " , shiftRotfile) ;
+//        for (int i=0;i<nrows_snr;i++){
+//            framedata[(int)((round)(Y_loc_snr[i])*xsize+(round)(X_loc_snr[i]))]=framedata[(int)((round)(Y_loc_snr[i])*xsize+(round)(X_loc_snr[i]))]+1;
+//        }
+//        
+//          status=findStar_algo1 (framedata);
+//   if (status)
+//    {
+//        LOG (ERROR) << "Error in star detection algorithm" ;
+//        return (EXIT_FAILURE) ;
+//    }
+   }
+   //till this
+   
+   
+   
+//forming alignment matrix  from individual detector to spacecraft
+
+ 
+
+ //Q ans=Inverse (uvitAlign);
+ 
+    //Reading UVIT attitude from attitude file
+    Attitude attvect;
+   
+//Get atttitude at given frame time 
+   
+    fitsfile *fptr;
+    long numrows;
+    long firstrow=1;
+    long firstelem=1;
+     fits_open_file (&fptr ,  attitudefile , READONLY , &status) ;
+    printError (status , "***Error in opening file***" , attitudefile) ;
+    fits_movabs_hdu (fptr , 2 , NULL , &status) ;
+    printError (status , "***Error in reading HDU 2***" , attitudefile) ;
+    fits_get_num_rows (fptr , &numrows , &status) ;
+    printError (status , "***Error in getting number of rows***" , attitudefile) ;
+     double *time = new double[numrows];
+     double  *RA_frmATT = new double[numrows];
+     double *DEC_frmATT = new double[numrows];
+    fits_read_col(fptr,TDOUBLE,1, firstrow,firstelem, numrows, NULL,time,NULL,&status); 
+     printError(status,"Error reading time column from attitude file  ",attitudefile);     
+     fits_read_col(fptr,TDOUBLE,3, firstrow,firstelem, numrows, NULL,RA_frmATT,NULL,&status); 
+     printError(status,"Error reading time column from attitude file  ",attitudefile);   
+     fits_read_col(fptr,TDOUBLE,4, firstrow,firstelem, numrows, NULL,DEC_frmATT,NULL,&status); 
+     printError(status,"Error reading time column from attitude file  ",attitudefile);     
+    float *roll_rot= new float[numrows];
+    fits_read_col (fptr , TFLOAT , 5 , 1 , 1 , numrows , NULL , roll_rot , NULL , &status) ;
+    printError (status , "Reading a column Fails in caldb",attitudefile) ;
+    fits_close_file (fptr,&status);
+     printError (status , "***Error in closing file***" , attitudefile) ;
+    //LOG(INFO)<<roll_rot[0];exit(1);
+     float rol_finalVal=0;
+     
+   float sum_roll_rot=0;
+   LOG(INFO)<<setprecision(20)<<time[0]<<" "<<datainfo.getTstart();
+    for (int i=1;i<numrows;i++)
+    {
+        if(time[i-1]>=datainfo.getTstart() && time[i]<datainfo.getTstart())
+        {
+            RA_pnt=(RA_frmATT[i-1] + (datainfo.getTstart() - time[i-1])*(RA_frmATT[i] - RA_frmATT[i-1]) / (time[i] - time[i-1]));
+            DEC_pnt=(DEC_frmATT[i-1] + (datainfo.getTstart() - time[i-1])*(DEC_frmATT[i] - DEC_frmATT[i-1]) / (time[i] - time[i-1]));
+            rol_finalVal = (roll_rot[i-1] + (datainfo.getTstart() - time[i-1])*(roll_rot[i] - roll_rot[i-1]) / (time[i] - time[i-1]));
+        }
+    }
+   if(RA_pnt == -9999 || DEC_pnt== -9999)
+   {
+       LOG(ERROR)<<"***NOT found RA_PNT and DEC_PNT direction in header***";
+       return(EXIT_FAILURE);
+   }
+   
+   LOG(INFO)<<"TWIST angle "<<setprecision(20)<<rol_finalVal<<" "<<RA_pnt<<" "<<DEC_pnt;
+   
+      double cdelt1,cdelt2;
+      float factor_delta=4800/600;
+      if(strcmp(datainfo.getDetector (),"VIS")==0)
+    {
+          
+           cdelt1=(XSCALE_ARCSEC_VIS/3600)/factor_delta;
+           cdelt2=(YSCALE_ARCSEC_VIS/3600)/factor_delta;
+    }
+    else if (strcmp(datainfo.getDetector (),"FUV")==0){
+        //cdelt1=3.357/3600;
+       //  cdelt2=3.311/3600;
+       cdelt1=(XSCALE_ARCSEC_FUV/3600)/factor_delta;
+       cdelt2=(YSCALE_ARCSEC_FUV/3600)/factor_delta;
+    }
+    else if(strcmp(datainfo.getDetector (),"NUV")==0)
+    {
+       cdelt1=(XSCALE_ARCSEC_NUV/3600)/factor_delta;
+       cdelt2=(YSCALE_ARCSEC_NUV/3600)/factor_delta;
+       // cdelt1=cdelt2=(3.3307*factor_delta/3600)/;
+       
+    }
+   // cdelt1=-cdelt1/cos(center_dec*M_PI/180);
+     cdelt1=-cdelt1;///cos(center_dec*M_PI/180);
+    // LOG(INFO)<<RA_pnt<<" "<<DEC_pnt;exit(1);
+     
+//Added logic for converting  J2000 to Current RA_DEC
+//   fract_year_cal=((datainfo.getTstart()/TOTALDAYS_IN_YEAR)+10)/100;
+     string Date_Of_Obs=date_obs;
+    string year_ofOBS=Date_Of_Obs.substr(0,4);
+    string  month_ofOBS =Date_Of_Obs.substr(5,2);
+    string date_ofOBS = Date_Of_Obs.substr(8,2);
+    string time_ofOBS_hh=Date_Of_Obs.substr(11,2);
+    string time_ofOBS_mm=Date_Of_Obs.substr(14,2);
+    string time_ofOBS_ss=Date_Of_Obs.substr(17,2);
+    float time_hh=atof(time_ofOBS_hh.c_str())/24;
+    float time_mm=atof(time_ofOBS_mm.c_str())/(24*60);
+    float time_ss=atof(time_ofOBS_ss.c_str())/(24*3600);
+    
+    float final_Date_fract=atof(date_ofOBS.c_str())+time_hh+time_mm+time_ss;
+    
+    LOG(INFO)<<year_ofOBS<<" "<<month_ofOBS<<" "<<date_ofOBS<<" "<<final_Date_fract;
+  float MJD_curr_Date=  ConvertDateToMJD(final_Date_fract,atof(month_ofOBS.c_str()),atof(year_ofOBS.c_str()));
+  LOG(INFO)<<MJD_curr_Date;
+   dayRefMJD=MJD_curr_Date-51543.5;
+   string starRADECfile=(string)moduleoutdir+"/"+"star_radec.txt";
+   ofstream temp(starRADECfile.c_str());
+   float Ra_diff_toAdd,dec_diff_toAdd;
+   vector<float> RA_img_Stars,DEC_img_Stars;
+    vector<float> RA_img_Stars_J2000Epoch,DEC_img_Stars_J2000Epoch;
+    
+     
+    temp<<"=============================================================="<<endl;
+   Convert_J2000_To_ObervationRADECVal(dayRefMJD,RA_pnt,DEC_pnt,Ra_diff_toAdd,dec_diff_toAdd);
+   
+   LOG(INFO)<<RA_pnt<<" "<<DEC_pnt<<" "<<Ra_diff_toAdd<<" "<<dec_diff_toAdd<<" "<<datainfo.getTstart();
+//   RA_pnt=RA_pnt+Ra_diff_toAdd*((datainfo.getTstart()/TOTALDAYS_IN_YEAR)+10);
+//   DEC_pnt=DEC_pnt+dec_diff_toAdd*((datainfo.getTstart()/TOTALDAYS_IN_YEAR)+10);
+   RA_pnt=RA_pnt+Ra_diff_toAdd*((dayRefMJD));
+   DEC_pnt=DEC_pnt+dec_diff_toAdd*(dayRefMJD);
+   float RA_pnt_temp=RA_pnt;
+   float DEC_pnt_temp=DEC_pnt;
+   float RA_pnt_J2000,DEC_pnt_J2000;
+   float Data_j2000_MJD=51543.5-MJD_curr_Date;
+   
+   Convert_J2000_To_ObervationRADECVal(Data_j2000_MJD,RA_pnt_temp,DEC_pnt_temp,RA_pnt_J2000,DEC_pnt_J2000);
+   RA_pnt_temp=RA_pnt_temp+RA_pnt_J2000*Data_j2000_MJD;
+   DEC_pnt_temp=DEC_pnt_temp+DEC_pnt_J2000*Data_j2000_MJD;
+   LOG(INFO)<<RA_pnt_temp<<" "<<DEC_pnt_temp;
+   
+   for(int i=0;i<Cx.size ();i++)
+    {
+        
+  star_ra=RA_pnt_temp+(Cx[i]-2400)*(cdelt1/cos(DEC_pnt_temp*M_PI/180));
+  star_dec=DEC_pnt_temp+(Cy[i]-2400)*cdelt2;
+  temp<<Cx[i]<<" "<<Cy[i]<<" "<<setprecision (20)<<star_ra<<setprecision (20)<<"  "<<star_dec<<endl;
+  
+  RA_img_Stars_J2000Epoch.push_back (star_ra);
+  DEC_img_Stars_J2000Epoch.push_back (star_dec);
+  
+    }
+   
+   
+   LOG(INFO)<<RA_pnt<<" "<<DEC_pnt;
+       
+
+ 
+      double x,y,z;
+     
+      
+      //for(int i=0;i<nelements;i++)
+      LOG(INFO)<<"Image Stars "<<Cx.size ();
+
+
+      center_dec_prev=-9999;
+      center_ra_prev=-9999;
+     
+      
+     
+   for(int i=0;i<Cx.size ();i++)
+    {
+//    star_dec=DEC_pnt+(Cy[i]-2400)*cdelt2;
+//    star_ra=RA_pnt+(Cx[i]-2400)*(cdelt1/cos(DEC_pnt*M_PI/180));
+   star_dec=DEC_pnt+(Cy[i]-2400)*cdelt2;
+    star_ra=RA_pnt+(Cx[i]-2400)*(cdelt1/cos(star_dec*M_PI/180));
+  
+    temp<<Cx[i]<<" "<<Cy[i]<<" "<<setprecision (20)<<star_ra<<setprecision (20)<<"  "<<star_dec<<endl;
+    RA_img_Stars.push_back (star_ra);
+    DEC_img_Stars.push_back (star_dec);
+  
+    }
+  
+
+      //logic for Center computation
+      
+float center_ra_temp,center_dec_temp;      
+ //till this
+//exit(1);
+      
+      //Added Take  5 brightest stars.
+//        string database = databasename;
+//        LOG(INFO)<<"Opening Database...."<<databasename;
+   if (!FileExists (databasename)) 
+   {
+       LOG(ERROR)<<"DataBase not found";
+       return(EXIT_FAILURE);
+   }
+ 
+    int naxis = 2 ;
+    long naxes[2] ;
+    naxes[0] = naxes[1] = xsize ;
+   fits_create_file(&fout, imagefile_out, &status);
+   printError(status," ",imagefile_out);
+    
+   //fits_copy_file(fin,fout,1,1,1,&status);
+   //printError(status,"File cannot be copied",imagefile_in);
+    
+  
+   flag_NOT_FOUND_CATA_MATCH=0;
+   int numStars=RA_img_Stars.size();
+   if (RA_img_Stars.size()<numStars){
+       numStars=RA_img_Stars.size();
+   }
+   LOG(INFO)<<RA_img_Stars.size();
+   string newRad;
+   double mean_Of_diffra,mean_Of_diffdec,mean_Of_diffra_uv,mean_Of_diffdec_uv;
+   string file1=(string)moduleoutdir+"/"+"star_raDec_frmOptics_catalogueWith_5Stars.txt";
+   string file2=(string)moduleoutdir+"/"+"star_raDec_frmUV_catalogue.txt";
+   string file3=(string)moduleoutdir+"/"+"star_raDec_frmOptics_catalogueWith_10Stars.txt";
+  
+   
+   diff_ra_add=0.0;
+   diff_dec_add=0.0;
+   float temp_new_RAcmp,temp_new_DECcmp;
+   vector<double> track_diffRA_temp,track_diffDEC_temp;
+   vector<double > RA_img,DEC_img,RA_catalogue,DEC_catalogue;
+   vector<double> X_img,Y_img,X_catalogue,Y_catalogue,RA_final_catalogue,DEC_final_catalogue;
+   double  centroid_x_image,centroid_y_image,centroid_x_catalogue,centroid_y_catalogue;
+   double  DeltaX,DeltaY,Deltatheta;
+   if(numStars/2>3)
+   {
+    LOG(INFO)<<"Searching OPTIC catalogue";
+   newRad=getRaDECmatch(RA_img_Stars_J2000Epoch,DEC_img_Stars_J2000Epoch,2,len_a,len_b,rad_search,numStars/2,mean_Of_diffra,mean_Of_diffdec,file1,&numStars_frmCatamatch_optic,cos((DEC_pnt)*M_PI/180),0);
+   
+   if(flag_NOT_FOUND_CATA_MATCH==0)
+   {
+       LOG(INFO)<<"New search radius is "<<setprecision(10)<<newRad<<" Trying with  10 stars in  UVIT image.........";
+       flag_NOT_FOUND_CATA_MATCH=0;
+       if(atof(newRad.c_str())>0.0)
+       newRad=getRaDECmatch (RA_img_Stars_J2000Epoch,DEC_img_Stars_J2000Epoch,2,len_a,len_b,newRad,numStars,mean_Of_diffra,mean_Of_diffdec,file3,&numStars_frmCatamatch_optic,cos((DEC_pnt)*M_PI/180),0); 
+       if(flag_NOT_FOUND_CATA_MATCH==1)
+       {
+       
+       flag_Optic_Catalogue=0;
+       center_ra=RA_pnt;
+       center_dec=DEC_pnt;     
+       fits_copy_file(fin,fout,1,1,1,&status);
+   printError(status,"File cannot be copied",imagefile_in);
+       }
+       else{
+           flag_Optic_Catalogue=1;
+            diff_ra_add=mean_Of_diffra/cos((DEC_pnt)*M_PI/180);
+           diff_dec_add=mean_Of_diffdec;
+
+           center_ra=RA_pnt+(mean_Of_diffra/cos((DEC_pnt)*M_PI/180));
+           center_dec=DEC_pnt+mean_Of_diffdec;
+           string DiffFinalfile=(string)moduleoutdir+"/"+"Diff_Final.txt";
+           ofstream file(DiffFinalfile.c_str());
+           track_diffRA_temp.clear();
+           track_diffDEC_temp.clear();
+           RA_img.clear();DEC_img.clear();
+           RA_catalogue.clear();DEC_catalogue.clear();
+           X_img.clear();Y_img.clear();
+           X_catalogue.clear(),Y_catalogue.clear();
+           
+           file<<setw(20)<<"CX"<<setw(20)<<"CY"<<setw(20)<<"RA-cata"<<setw(20)<<"DEC-cata"<<setw(20)<<"RA-UVIT"<<setw(20)<<"DEC-UVIT"<<setw(20)<<"DIFF_RA"<<setw(20)<<"DIFF_DEC"<<endl;
+           file<<"===================================================================================================================================================================="<<endl;
+           for (int i=0;i<validStar_index_filtered.size();i++){
+               LOG(INFO)<<validStar_index_filtered[i];
+           }
+           
+           for (int i = 0; i < track_decback.size(); i++) {
+                    if (track_decback[i] != -9999 && track_raback[i] != -9999) {
+                        for (int j = 0; j < validStar_index_filtered.size(); j++) {
+                            if(i==validStar_index_filtered[j]){
+                       
+                            temp_new_RAcmp = RA_img_Stars[i];//+diff_ra_add;
+                            temp_new_DECcmp = DEC_img_Stars[i];//+diff_dec_add;
+
+                            //calculate CentroidX,Centroid_y
+//                            centroid_x_image=((temp_new_RAcmp-RA_pnt)/(cdelt1/cos(DEC_pnt * M_PI / 180)))+2400;
+//                           centroid_y_image=((temp_new_DECcmp-DEC_pnt)/(cdelt2))+2400;
+                             centroid_x_image=((temp_new_RAcmp-RA_pnt)/(cdelt1/cos(temp_new_DECcmp * M_PI / 180)))+2400;
+                             centroid_y_image=((temp_new_DECcmp-DEC_pnt)/(cdelt2))+2400;
+//                           centroid_x_image=((temp_new_RAcmp-center_ra)/(cdelt1/cos(DEC_pnt * M_PI / 180)))+2400;
+//                           centroid_y_image=((temp_new_DECcmp-center_dec)/(cdelt2))+2400;
+//                           centroid_x_catalogue=((track_raback[i]-RA_pnt)/(cdelt1/cos(DEC_pnt * M_PI / 180)))+2400;
+//                           centroid_y_catalogue=((track_decback[i]-DEC_pnt)/(cdelt2))+2400;
+                            centroid_x_catalogue=((track_raback[i]-RA_pnt)/(cdelt1/cos(track_decback[i] * M_PI / 180)))+2400;
+                           centroid_y_catalogue=((track_decback[i]-DEC_pnt)/(cdelt2))+2400;
+                           LOG(INFO)<<centroid_x_image<<" "<<centroid_x_catalogue<<" "<<centroid_y_image<<" "<<centroid_y_catalogue;
+                           X_img.push_back(centroid_x_image);
+                           Y_img.push_back(centroid_y_image);
+                           X_catalogue.push_back(centroid_x_catalogue);
+                           Y_catalogue.push_back(centroid_y_catalogue);
+                           RA_final_catalogue.push_back(track_raback[i]) ;
+                           DEC_final_catalogue.push_back(track_decback[i]);
+//                            file << setw(20) << Cx[i] << setw(20) << Cy[i] << setw(20) << track_raback[i] << setw(20) << track_decback[i] << setw(20) << temp_new_RAcmp << setw(20) << temp_new_DECcmp << setw(20) <<
+//                                    (track_raback[i] - temp_new_RAcmp) << setw(20) << track_decback[i] - temp_new_DECcmp << endl;
+//                            track_diffRA_temp.push_back((track_raback[i] - temp_new_RAcmp));
+//                            track_diffDEC_temp.push_back(track_decback[i] - temp_new_DECcmp);
+                            break;
+                            }
+                        }
+                    }
+
+                }
+           calculateShiftsAndRoll(X_img.size(),X_img,Y_img,X_catalogue,Y_catalogue,4800,4800,DeltaX,DeltaY,Deltatheta);
+           
+            //calculateShiftsAndRoll(RA_img.size(),RA_img,DEC_img,RA_catalogue,RA_catalogue,4800,4800,DeltaX,DeltaY,Deltatheta);
+           float new_Xcent_val_img,new_Ycent_val_img;
+           DX_UVIT=DeltaX*8;
+           DYshift_UVIT=DeltaY*8;
+           DTheta_UVIT=Deltatheta;
+           LOG(INFO)<<"Theta came"<<Deltatheta<<" "<<DX_UVIT<<" "<<DYshift_UVIT;
+           //now this shift to be add in to  X and Y location of event file
+           
+//           for (int index_snr =0;index_snr<nrows_snr;index_snr++)
+//           {
+//               X_loc_snr[index_snr]=X_loc_snr[index_snr];;
+//               Y_loc_snr[index_snr]=Y_loc_snr[index_snr];//+DYshift_UVIT;               
+//           }
+           //roll_angle=(360-(roll_angle-DTheta_UVIT));
+            
+           if(flag_inputImage==0){
+           roll_angle=(360-(roll_angle-DTheta_UVIT));//update roll angle value.
+           LOG(INFO)<<roll_angle;
+           }
+           else{
+               roll_angle=DTheta_UVIT;
+           }
+          // roll_angle=(360-(roll_angle-DTheta_UVIT));//update roll angle value.
+           double ctheta=cos(roll_angle*M_PI/180);
+           double stheta=sin(roll_angle*M_PI/180);
+
+           double x1,x2;
+           double newx,newy;
+            float *Rotated_frmData= new float[xsize*ysize];
+            float *NewFinalArr= new float[xsize*ysize];
+           for(int i=0;i<xsize*ysize;i++) Rotated_frmData[i]=0.0f;
+            LOG(INFO)<<"Flag values is "<<flag_inputImage;
+           
+            if(flag_inputImage==0){
+           for (int i = 0; i < nrows_snr; i++) 
+            {
+              //x1=(-((xsize -1-X_loc_snr[i]-xsize/2) * (ctheta)) - ((Y_loc_snr[i]-xsize/2) * (stheta)))+xsize/2;
+              //x2=(-((xsize-1-X_loc_snr[i]-xsize/2) * (stheta)) +((Y_loc_snr[i]-xsize/2)* (ctheta))) +xsize/2;  
+              x1=(((X_loc_snr[i]-xsize/2) * (ctheta)) - ((Y_loc_snr[i]-xsize/2) * (stheta)))+xsize/2+DX_UVIT;
+              x2=((X_loc_snr[i]-xsize/2) * (stheta)) +((Y_loc_snr[i]-xsize/2)* (ctheta)) +xsize/2+DYshift_UVIT;  
+               newx=(((X_loc_snr[i]-xsize/2) * (ctheta)) - ((Y_loc_snr[i]-xsize/2) * (stheta)))+xsize/2;
+             newy=((X_loc_snr[i]-xsize/2) * (stheta)) +((Y_loc_snr[i]-xsize/2)* (ctheta)) +xsize/2;  
+              if((int)((int)(round(x2))*xsize+(int)(round(x1)))<xsize*ysize)
+              { 
+              //Rotated_image[(int)(xsize-round(x2))*xsize+(int)(round(x1))]=Rotated_image[(int)(xsize-round(x2))*xsize+(int)(round(x1))]+effective_NumPhotons[i]*mult_temp[i]*badFlag_temp[i];
+                 //Rotated_image[(int)(round(x1))*xsize+(int)(xsize-round(x2))]=Rotated_image[(int)(round(x1))*xsize+(int)(xsize-round(x2))]+effective_NumPhotons[i]*mult_temp[i]*badFlag_temp[i];
+//             Rotated_frmData[(int)(round(xsize-x2))*xsize+(int)(round(xsize-x1))]=Rotated_frmData[(int)(round(xsize-x2))*xsize+(int)(round(xsize-x1))]+enp_snr[i]*mult_phtn_snr[i]*bad_flag_snr[i];
+              Rotated_frmData[(int)(round(x2))*xsize+(int)(round(x1))]=Rotated_frmData[(int)(round(x2))*xsize+(int)(round(x1))]+enp_snr[i]*mult_phtn_snr[i]*bad_flag_snr[i];
+                  //Rotated_frmData[(int)(round(x1))*xsize+(int)(round(xsize-x2))]=Rotated_frmData[(int)(round(x1))*xsize+(int)(round(xsize-x2))]+enp_snr[i]*mult_phtn_snr[i]*bad_flag_snr[i];
+              }
+             if((int)((int)(round(newy))*xsize+(int)(round(newx)))<xsize*ysize)
+              { 
+              //Rotated_image[(int)(xsize-round(x2))*xsize+(int)(round(x1))]=Rotated_image[(int)(xsize-round(x2))*xsize+(int)(round(x1))]+effective_NumPhotons[i]*mult_temp[i]*badFlag_temp[i];
+                 //Rotated_image[(int)(round(x1))*xsize+(int)(xsize-round(x2))]=Rotated_image[(int)(round(x1))*xsize+(int)(xsize-round(x2))]+effective_NumPhotons[i]*mult_temp[i]*badFlag_temp[i];
+//             Rotated_frmData[(int)(round(xsize-x2))*xsize+(int)(round(xsize-x1))]=Rotated_frmData[(int)(round(xsize-x2))*xsize+(int)(round(xsize-x1))]+enp_snr[i]*mult_phtn_snr[i]*bad_flag_snr[i];
+              NewFinalArr[(int)(round(newy))*xsize+(int)(round(newx))]=NewFinalArr[(int)(round(newy))*xsize+(int)(round(newx))]+enp_snr[i]*mult_phtn_snr[i]*bad_flag_snr[i];
+                  //Rotated_frmData[(int)(round(x1))*xsize+(int)(round(xsize-x2))]=Rotated_frmData[(int)(round(x1))*xsize+(int)(round(xsize-x2))]+enp_snr[i]*mult_phtn_snr[i]*bad_flag_snr[i];
+              }
+             
+             
+             
+             
+            }
+           
+            }
+            else {
+                
+                float mid_X_new,mid_Y_new;
+                int k1,k2;
+                double x1,x2;
+                //bilinear interpolation
+                    for (int i = 0; i < xsize; i++) {
+                        mid_X_new = i - xsize / 2;
+                        for (int j = 0; j < xsize; j++) {
+                            mid_Y_new = j - xsize / 2;
+
+                            x1 = ((mid_X_new * (ctheta)) - (mid_Y_new * (stheta))) + (xsize/2);
+                            x2 = ((mid_X_new * (stheta)) +(mid_Y_new * (ctheta))) + (ysize/2);
+                            //              if(x1>0 && x1<FINALFRAMESIZE_REGAVG && x2>0 && x2<FINALFRAMESIZE_REGAVG){
+                            //                  imageLocation_Array_X[(int)(round(x2)*FINALFRAMESIZE_REGAVG+round(x1))]=Regavg_subSampled_Array_Sig[j*FINALFRAMESIZE_REGAVG+i];
+                            //              }
+ if((int)((int)(round(x2))*xsize+(int)(round(x1)))<xsize*xsize)
+              { 
+                 Rotated_frmData[(int)(round(x2))*xsize+(int)(round(x1))]=framedata[j*xsize+i];
+                }
+//                            k1 = floorf(x1);
+//                            x1 -= k1;
+//                            k2 = floorf(x2);
+//                            x2 -= k2;
+//
+//                            if (k1 >= 0 && k1+1 < xsize  && k2 >= 0 && k2+1 < xsize) {
+////                               Rotated_frmData[((xsize-1)  - i) * xsize + ((xsize-1)  - j)] =
+//                                Rotated_frmData[((xsize-1)  - i) * xsize + (j)] =
+//                                        (1. - x1)*(1. - x2) * framedata[k1 * xsize + k2] +
+//                                        x1 * (1. - x2) * framedata[(k1 + 1) * xsize+ k2] +
+//                                        (1. - x1) * x2 * framedata[k1 * xsize + (k2 + 1)] +
+//                                        x1 * x2 * framedata[(k1 + 1) * xsize + (k2 + 1)];
+//                            } else 
+//                            {
+//                                Rotated_frmData[i * xsize + j] = 0.0f;
+//                            }
+                        }
+
+
+
+                    }
+                for(int i=0;i<xsize*ysize;i++){
+                    NewFinalArr[i]=Rotated_frmData[i];
+                }
+                
+                float *tempArray_Rotate= new float[xsize*ysize];
+                initArray(tempArray_Rotate,xsize*ysize,0.0f);
+                for (int i =0;i<xsize;i++){
+                    for (int j=0;j<ysize;j++){
+                        if((int)round(j+DYshift_UVIT)*xsize+(int)round(i+DX_UVIT)> 0 && (int)round(j+DYshift_UVIT)*xsize+(int)round(i+DX_UVIT)<xsize*ysize)
+                        tempArray_Rotate[(int)round(j+DYshift_UVIT)*xsize+(int)round(i+DX_UVIT)]=Rotated_frmData[j*xsize+i];//Adding DX and DY to the Rotated array.
+                    }
+                    
+                    
+                }
+                initArray<float>(Rotated_frmData,xsize*ysize,0.0f);
+                for (int i=0;i<xsize*ysize;i++){
+                    Rotated_frmData[i]=tempArray_Rotate[i];
+                }
+                delete[] tempArray_Rotate;
+                              
+               
+            }
+          //float deltaAlpha=cdelt1/cos(DEC_pnt*M_PI/180)*DX_UVIT;
+          //float deltadelta=cdelt2*DYshift_UVIT;
+          
+         
+          
+          
+        long naxes[2] ;
+    naxes[0] = naxes[1] = xsize ;
+    int naxis = 2 ;
+    int bitpix = FLOAT_IMG ;
+         fits_create_img (fout , bitpix , naxis , naxes , &status) ;
+//         fits_write_pix (fout , TFLOAT , fpixel , xsize*ysize , Rotated_frmData , &status) ;
+         fits_write_pix (fout , TFLOAT , fpixel , xsize*ysize , NewFinalArr , &status) ;
+         LOG(INFO)<<status;
+         vector<float> new_X_coordiante_After_Rot,new_Y_coordinate_After_Rot;
+           for (int i=0;i<X_img.size();i++)
+           {
+          
+               new_Xcent_val_img=((X_img[i]-2400)*cos(Deltatheta*M_PI/180)-(Y_img[i]-2400)*sin(Deltatheta*M_PI/180))+2400+DeltaX*8;
+               new_Ycent_val_img=((X_img[i]-2400)*sin(Deltatheta*M_PI/180)+(Y_img[i]-2400)*cos(Deltatheta*M_PI/180))+2400+DeltaY*8;
+                 temp_new_RAcmp = RA_pnt + (new_Xcent_val_img - 2400)*(cdelt1 / cos(DEC_pnt * M_PI / 180));
+                 temp_new_DECcmp = DEC_pnt + (new_Ycent_val_img - 2400) * cdelt2;
+                 new_X_coordiante_After_Rot.push_back(new_Xcent_val_img-DeltaX*8);
+                 new_Y_coordinate_After_Rot.push_back(new_Ycent_val_img-DeltaY*8);
+            
+               file <<setw(20) <<setw(20)<< RA_final_catalogue[i] << setw(20) << DEC_final_catalogue[i] << setw(20) << temp_new_RAcmp << setw(20) << temp_new_DECcmp << setw(20) <<
+                                    (RA_final_catalogue[i] - temp_new_RAcmp) << setw(20) << DEC_final_catalogue[i] - temp_new_DECcmp <<setw(20)<< endl;
+               track_diffRA_temp.push_back((RA_final_catalogue[i] - temp_new_RAcmp)*cos(DEC_pnt*M_PI/180));
+               track_diffDEC_temp.push_back(DEC_final_catalogue[i] - temp_new_DECcmp);
+           }
+           
+           
+           float Mean_OfDiffRA=getmean(track_diffRA_temp.data(),track_diffRA_temp.size());
+           float Mean_OfDiffDEC=getmean(track_diffDEC_temp.data(),track_diffDEC_temp.size());
+           file<<"SD for DIFF_RA->"<<getSD(track_diffRA_temp.data(),track_diffRA_temp.size())<<endl;
+           file<<"SD for DIFF_DEC->"<<getSD(track_diffDEC_temp.data(),track_diffDEC_temp.size())<<endl;
+           file.close();
+         
+         
+           Cx.clear();
+           Cy.clear();
+           Ci.clear();
+         
+         findStar_algo1(Rotated_frmData);
+         
+         vector<float> RA_img_final_star_j2000,DEC_img_final_star_j2000,RA_img_final_star_jOBS,DEC_img_final_star_jOBS;
+         LOG(INFO)<<Cx.size();
+         
+                for (int index_Newimage = 0; index_Newimage < Cx.size(); index_Newimage++) {
+                    LOG(INFO)<<Cx[index_Newimage]<<" "<<Cy[index_Newimage];
+                      star_dec = DEC_pnt_temp + (Cy[index_Newimage] - 2400) * cdelt2;
+                      star_ra = RA_pnt_temp + (Cx[index_Newimage] - 2400)*(cdelt1 / cos(star_dec * M_PI / 180));
+//                    star_ra = RA_pnt_temp + (Cx[index_Newimage] - 2400)*(cdelt1 / cos(DEC_pnt_temp * M_PI / 180));
+//                    star_dec = DEC_pnt_temp + (Cy[index_Newimage] - 2400) * cdelt2;
+                    temp << Cx[index_Newimage] << " " << Cy[index_Newimage] << " " << setprecision(20) << star_ra << setprecision(20) << "  " << star_dec << endl;
+
+                    RA_img_final_star_j2000.push_back(star_ra);
+                    DEC_img_final_star_j2000.push_back(star_dec);
+
+                }
+         
+          for (int index_Newimage = 0; index_Newimage < Cx.size(); index_Newimage++) {
+                    LOG(INFO)<<Cx[index_Newimage]<<" "<<Cy[index_Newimage];
+//                    star_ra = RA_pnt + (Cx[index_Newimage] - 2400)*(cdelt1 / cos(DEC_pnt * M_PI / 180));
+//                    star_dec = DEC_pnt + (Cy[index_Newimage] - 2400) * cdelt2;
+                    star_dec = DEC_pnt + (Cy[index_Newimage] - 2400) * cdelt2;
+                    star_ra = RA_pnt + (Cx[index_Newimage] - 2400)*(cdelt1 / cos(star_dec* M_PI / 180));
+                    temp << Cx[index_Newimage] << " " << Cy[index_Newimage] << " " << setprecision(20) << star_ra << setprecision(20) << "  " << star_dec << endl;
+
+                    RA_img_final_star_jOBS.push_back(star_ra);
+                    DEC_img_final_star_jOBS.push_back(star_dec);
+
+                }
+         
+        // ofstream file_final("Diff_Final_j2016.txt");
+         string file_final=moduleoutdir+(string)"/Diff_Final_j2016.txt";
+         LOG(INFO)<<newRad;
+         float newRad_smaller=atof(newRad.c_str())/2;
+         sprintf((char*)newRad.c_str(),"%f",newRad_smaller);
+         LOG(INFO)<<newRad<<" "<<newRad_smaller;
+         X_img.clear();Y_img.clear();X_catalogue.clear();Y_catalogue.clear(),RA_final_catalogue.clear();DEC_final_catalogue.clear();
+         
+         newRad=getRaDECmatch (RA_img_final_star_j2000,DEC_img_final_star_j2000,2,len_a,len_b,newRad,numStars,mean_Of_diffra,mean_Of_diffdec,file_final,&numStars_frmCatamatch_optic,cos((DEC_pnt)*M_PI/180),0); 
+         
+         vector<float> RA_image_OBS,DEC_image_OBS;
+         
+         for (int i = 0; i < track_decback.size(); i++) {
+                    if (track_decback[i] != -9999 && track_raback[i] != -9999) {
+                        for (int j = 0; j < validStar_index_filtered.size(); j++) {
+                            if(i==validStar_index_filtered[j]){
+                       
+                            temp_new_RAcmp = RA_img_final_star_j2000[i];//+diff_ra_add;
+                            temp_new_DECcmp = DEC_img_final_star_j2000[i];//+diff_dec_add;
+
+                            //calculate CentroidX,Centroid_y
+                           centroid_x_image=((temp_new_RAcmp-RA_pnt)/(cdelt1/cos(DEC_pnt * M_PI / 180)))+2400;
+                           centroid_y_image=((temp_new_DECcmp-DEC_pnt)/(cdelt2))+2400;
+//                           centroid_x_image=((temp_new_RAcmp-center_ra)/(cdelt1/cos(DEC_pnt * M_PI / 180)))+2400;
+//                           centroid_y_image=((temp_new_DECcmp-center_dec)/(cdelt2))+2400;
+                           centroid_x_catalogue=((track_raback[i]-RA_pnt)/(cdelt1/cos(DEC_pnt * M_PI / 180)))+2400;
+                           centroid_y_catalogue=((track_decback[i]-DEC_pnt)/(cdelt2))+2400;
+                           LOG(INFO)<<centroid_x_image<<" "<<centroid_x_catalogue<<" "<<centroid_y_image<<" "<<centroid_y_catalogue;
+                           X_img.push_back(centroid_x_image);
+                           Y_img.push_back(centroid_y_image);
+                           X_catalogue.push_back(centroid_x_catalogue);
+                           Y_catalogue.push_back(centroid_y_catalogue);
+                           RA_final_catalogue.push_back(track_raback[i]) ;
+                           DEC_final_catalogue.push_back(track_decback[i]);
+                           RA_image_OBS.push_back(RA_img_final_star_jOBS[i]);
+                           DEC_image_OBS.push_back(DEC_img_final_star_jOBS[i]);
+//                            file << setw(20) << Cx[i] << setw(20) << Cy[i] << setw(20) << track_raback[i] << setw(20) << track_decback[i] << setw(20) << temp_new_RAcmp << setw(20) << temp_new_DECcmp << setw(20) <<
+//                                    (track_raback[i] - temp_new_RAcmp) << setw(20) << track_decback[i] - temp_new_DECcmp << endl;
+//                            track_diffRA_temp.push_back((track_raback[i] - temp_new_RAcmp));
+//                            track_diffDEC_temp.push_back(track_decback[i] - temp_new_DECcmp);
+                            break;
+                            }
+                        }
+                    }
+
+                }
+         
+         track_diffRA_temp.clear();
+         track_diffDEC_temp.clear();
+         string finalcatamatchfile=(string)moduleoutdir+"/"+"FinalCatalogueMatch_JOBS.txt";
+         ofstream file_jOBS(finalcatamatchfile.c_str());
+          for (int i=0;i<X_img.size();i++)
+           {
+          
+               //new_Xcent_val_img=((X_img[i]-2400)*cos(Deltatheta*M_PI/180)-(Y_img[i]-2400)*sin(Deltatheta*M_PI/180))+2400+DeltaX*8;
+               //new_Ycent_val_img=((X_img[i]-2400)*sin(Deltatheta*M_PI/180)+(Y_img[i]-2400)*cos(Deltatheta*M_PI/180))+2400+DeltaY*8;
+                // temp_new_RAcmp = RA_pnt + (new_Xcent_val_img - 2400)*(cdelt1 / cos(DEC_pnt * M_PI / 180));
+                // temp_new_DECcmp = DEC_pnt + (new_Ycent_val_img - 2400) * cdelt2;
+                 
+            
+               file_jOBS <<setw(20) <<setw(20)<< RA_final_catalogue[i] << setw(20) << DEC_final_catalogue[i] << setw(20) << RA_image_OBS[i] << setw(20) << DEC_image_OBS[i] << setw(20) <<
+                                    (RA_final_catalogue[i] - RA_image_OBS[i]) << setw(20) << DEC_final_catalogue[i] - DEC_image_OBS[i] <<setw(20)<< endl;
+               track_diffRA_temp.push_back((RA_final_catalogue[i] - RA_image_OBS[i]));
+               track_diffDEC_temp.push_back(DEC_final_catalogue[i] - DEC_image_OBS[i]);
+           }
+           
+           
+          file_jOBS<<"SD for DIFF_RA->"<<getSD(track_diffRA_temp.data(),track_diffRA_temp.size())<<endl;
+           file_jOBS<<"SD for DIFF_DEC->"<<getSD(track_diffDEC_temp.data(),track_diffDEC_temp.size())<<endl;
+           file_jOBS.close();
+         
+         
+         
+         
+         
+
+           
+           }
+           //till this
+         
+           
+           
+          //added
+//           new_X_coordiante_After_Rot.clear();
+//           new_Y_coordinate_After_Rot.clear();
+//           file<<"==========================================================================="<<endl;
+//           for (int i=0;i<X_img.size();i++)
+//           {
+//          
+//               new_Xcent_val_img=((X_img[i]-2400)*cos(Deltatheta*M_PI/180)-(Y_img[i]-2400)*sin(Deltatheta*M_PI/180))+2400+DeltaX*8;
+//               new_Ycent_val_img=((X_img[i]-2400)*sin(Deltatheta*M_PI/180)+(Y_img[i]-2400)*cos(Deltatheta*M_PI/180))+2400+DeltaY*8;
+//                 temp_new_RAcmp = RA_pnt + (new_Xcent_val_img - 2400)*(cdelt1 / cos(DEC_pnt * M_PI / 180));
+//                 temp_new_DECcmp = DEC_pnt + (new_Ycent_val_img - 2400) * cdelt2;
+//                 new_X_coordiante_After_Rot.push_back(new_Xcent_val_img-DeltaX*8);
+//                 new_Y_coordinate_After_Rot.push_back(new_Ycent_val_img-DeltaY*8);
+//            
+//               file << setw(20) << Cx[i] << setw(20) << Cy[i] << setw(20) <<sqrt((Cx[i]-2400)*(Cx[i]-2400)+(Cy[i]-2400)*(Cy[i]-2400))<<setw(20) <<
+//                                    (RA_final_catalogue[i] - temp_new_RAcmp) << setw(20) << DEC_final_catalogue[i] - temp_new_DECcmp <<setw(20)<<3600*sqrt((RA_final_catalogue[i] - temp_new_RAcmp-Mean_OfDiffRA)*(RA_final_catalogue[i] - temp_new_RAcmp-Mean_OfDiffRA)+(DEC_final_catalogue[i] - temp_new_DECcmp-Mean_OfDiffDEC)*(DEC_final_catalogue[i] - temp_new_DECcmp-Mean_OfDiffDEC))<< endl;
+//               track_diffRA_temp.push_back((RA_final_catalogue[i] - temp_new_RAcmp)*cos(DEC_pnt*M_PI/180));
+//               track_diffDEC_temp.push_back(DEC_final_catalogue[i] - temp_new_DECcmp);
+//           }
+//           
+           
+           //to be removw
+           
+           
+           
+//           LOG(INFO)<<setprecision(20)<<deltaAlpha<<" "<<deltadelta;
+//           center_ra=RA_pnt+deltaAlpha;
+//           center_dec=DEC_pnt+deltadelta;
+//           vector<double> Cxvect,Cyvect,Cintvect;
+//           Cxvect=Cx;
+//           Cyvect=Cy;
+//           Cintvect=Ci;
+//           vector<float> RA_img_j2016_corrected,DEC_img_j2016_corrected;
+//         
+//           findStar_algo1(Rotated_frmData);
+//           
+//           LOG(INFO)<<Cx.size()<<" "<<Cxvect.size();//exit(1);
+//            for(int i=0;i<X_img.size ();i++)
+//            {
+//        
+//                star_ra=center_ra+(new_X_coordiante_After_Rot[i]-2400)*(cdelt1/cos(center_dec*M_PI/180));
+//                star_dec=center_dec+(new_Y_coordinate_After_Rot[i]-2400)*cdelt2;
+//                
+//
+//                RA_img_j2016_corrected.push_back (star_ra);
+//                DEC_img_j2016_corrected.push_back (star_dec);
+//  
+//            }
+//           
+       
+   }
+   else {
+       fits_copy_file(fin,fout,1,1,1,&status);
+        printError(status,"File cannot be copied",imagefile_in);
+       flag_Optic_Catalogue=0;
+       center_ra=RA_pnt;
+       center_dec=DEC_pnt;     
+       //addWCS(fout);
+       // fits_close_file(fout, &status);                 
+      // printError(status,"Error in  closing the file",imagefile_out);
+       //return EXIT_SUCCESS;
+   }
+   LOG(INFO)<<"NOW searching UV catalogue";
+    center_RA_UV=-9999,center_DEC_UV=-9999;
+   if(strcmp(datainfo.getDetector(),"NUV")==0)
+   {    
+       flag_NOT_FOUND_CATA_MATCH=0;
+        newRad=getRaDECmatch (RA_img_Stars_J2000Epoch,DEC_img_Stars_J2000Epoch,6,len_a,len_b,rad_search,numStars/2,mean_Of_diffra_uv,mean_Of_diffdec_uv,file2,&numStars_frmCatamatch_UV,cos(DEC_pnt*M_PI/180),1);
+   if(flag_NOT_FOUND_CATA_MATCH==0)
+   {
+       LOG(INFO)<<"New search radius is "<<setprecision(10)<<newRad<<" Trying with  10 stars in  UVIT image.........";
+       flag_NOT_FOUND_CATA_MATCH=0;
+       if(atof(newRad.c_str())>0.0)
+       newRad=getRaDECmatch (RA_img_Stars_J2000Epoch,DEC_img_Stars_J2000Epoch,6,len_a,len_b,newRad,numStars,mean_Of_diffra_uv,mean_Of_diffdec_uv,file2,&numStars_frmCatamatch_UV,cos(DEC_pnt*M_PI/180),1);   
+       if(flag_NOT_FOUND_CATA_MATCH==1){
+           flag_UV_Catalogue=0;
+       }
+       else{
+           flag_UV_Catalogue=1;
+           center_RA_UV=center_ra_temp+mean_Of_diffra_uv;
+            center_DEC_UV=center_dec_temp+mean_Of_diffdec_uv;
+       }
+   }
+   else {
+       flag_UV_Catalogue=0;
+   }
+       
+       
+   }
+   else if(strcmp(datainfo.getDetector(),"FUV"))
+   {
+        newRad=getRaDECmatch (RA_img_Stars_J2000Epoch,DEC_img_Stars_J2000Epoch,4,len_a,len_b,rad_search,numStars/2,mean_Of_diffra_uv,mean_Of_diffdec_uv,file2,&numStars_frmCatamatch_UV,cos(DEC_pnt*M_PI/180),1);
+   if(flag_NOT_FOUND_CATA_MATCH==0)
+   {   flag_NOT_FOUND_CATA_MATCH=0;
+       LOG(INFO)<<"New search radius is "<<setprecision(10)<<newRad<<" Trying with  10 stars in  UVIT image.........";
+       if(atof(newRad.c_str())>0.0)
+       newRad=getRaDECmatch (RA_img_Stars_J2000Epoch,DEC_img_Stars_J2000Epoch,4,len_a,len_b,newRad,numStars,mean_Of_diffra_uv,mean_Of_diffdec_uv,file2,&numStars_frmCatamatch_UV,cos(DEC_pnt*M_PI/180),1);   
+       if(flag_NOT_FOUND_CATA_MATCH==1){
+           flag_UV_Catalogue=0;
+       }
+       else{
+           flag_UV_Catalogue=1;
+           center_RA_UV=center_RA_UV+mean_Of_diffra_uv;
+           center_DEC_UV=center_DEC_UV+mean_Of_diffdec_uv;
+       }
+   }
+   else{
+       flag_UV_Catalogue=0;
+   }
+       
+   }
+   //outside of while loop!!
+//   double mean_Of_diffra=getmean (diff_RA.data (),diff_RA.size ());
+//   double mean_Of_diffdec=getmean (diff_DEC.data (),diff_DEC.size ());
+//   double new_searchRadius=sqrt(mean_Of_diffra*mean_Of_diffra+mean_Of_diffdec*mean_Of_diffdec)*1.2;
+   
+   }
+   else
+   {
+   LOG(ERROR)<<"***Total number of stars found is less than 3 ,using RA_PNT and DEC_PNT***";
+   flag_NOT_FOUND_CATA_MATCH=1;   
+   center_ra=RA_pnt;
+   center_dec=DEC_pnt; 
+   fits_copy_file(fin,fout,1,1,1,&status);
+    printError(status,"File cannot be copied",imagefile_in);
+   }
+   temp.close ();
+   addWCS(fout);
+       
+    LOG(INFO)<<"Output Image file created with WCS keywords"; 
+       fits_close_file(fout, &status);                 
+    printError(status,"Error in  closing the file",imagefile_out);
+    vector<string> historystr;
+    if(history==YES)
+    {
+        getHistory(historystr);
+        writeHistory(imagefile_out,historystr);
+    }
+   fits_close_file(fin,&status);
+   printError(status,"Error in closing file", imagefile_in);
+    //writeCommonKeywords(fout,modulename);
+    
+   
+//   if(flag_NOT_FOUND_CATA_MATCH==0)
+//   {
+//   LOG(INFO)<<"New search radius is "<<setprecision(10)<<newRad<<" Trying with  10 stars in  UVIT image.........";
+//   newRad=getRaDECmatch (RA_img_Stars,DEC_img_Stars,search_algo_ctlg,len_a,len_b,newRad,numStars,mean_Of_diffra,mean_Of_diffdec,file2);
+//      
+//   }
+//   else {
+//       center_ra=RA_pnt;
+//       center_dec=DEC_pnt;     
+//       addWCS(fout);
+//        fits_close_file(fout, &status);                 
+//       printError(status,"Error in  closing the file",imagefile_out);
+//       return EXIT_SUCCESS;
+//   }
+   
+    //call select
+
+ // vector<string> usno_CAT2,radeg_CAT2,dedeg_CAT2,bmag_CAT2,rmag_CAT2,epoch_CAT2,nuvmag,errnuv,fuvmag,errfuv,nuvcounts,errcounts;
+  //char temp_ra[FLEN_FILENAME];
+  // char temp_dec[FLEN_FILENAME];
+  //sprintf(temp_ra," %f",center_ra);
+  //sprintf(temp_dec," %f",center_dec);
+  //db.select(usno_CAT2,radeg_CAT2,dedeg_CAT2,bmag_CAT2,rmag_CAT2,epoch_CAT2,(string)temp_ra,(string)temp_dec,nuvmag,errnuv,fuvmag,errfuv,nuvcounts,errcounts,search_algo_ctlg,len_a,len_b);
+      
+      
+      //till this
+//      temp.close ();
+   
+      
+//      spMatrix Anew(Cx.size ()*2,6);
+//   spMatrix Bnew(Cx.size ()*2,1);
+//   spMatrix Xnew(6,1);
+//   int cnt_radec=0;
+//   for(int i=0;i<Cx.size ();i++)
+//   {
+//       Anew(2*i,0)=1; Anew(2*i,1)=Cx[i]; Anew(2*i,2)=Cy[i]; Anew(2*i,3)=0; Anew(2*i,4)=0; Anew(2*i,5)=0;
+//       Anew(2*i+1,0)=0; Anew(2*i+1,1)=0; Anew(2*i+1,2)=0; Anew(2*i+1,3)=1; Anew(2*i+1,4)=Cx[i]; Anew(2*i+1,5)=Cy[i];
+//       Bnew(2*i,0)=RA_img_Stars[i];
+//       Bnew(2*i+1,0)=DEC_img_Stars[i];
+//               cnt_radec++;
+//   
+//   }
+//   LOG(INFO)<<"A--------";
+//   LOG(INFO)<<endl<<Anew;
+//   LOG(INFO)<<"B--------";
+//   LOG(INFO)<<endl<<Bnew;
+//   
+//   Xnew.ApplyLeastSquare (Anew,Bnew);
+//     LOG(INFO) <<Xnew;
+//      LOG(INFO)<<Xnew(2,0);
+//   LOG(INFO)<<setprecision (20)<<atan2(-1*Xnew(2,0),Xnew(1,0))*180/M_PI<<" "<<setprecision (20)<<atan2(Xnew(4,0),Xnew(5,0))*180/M_PI;
+//     LOG(INFO)<<setprecision (20)<<atan2(-1*Xnew(2,0),Xnew(1,0))<<" "<<setprecision (20)<<atan2(Xnew(4,0),Xnew(5,0));
+//     double theta_val=atan2(-1*Xnew(2,0),Xnew(1,0))*180/M_PI;
+//     //till this
+//   
+//     LOG(INFO)<<xsize<<" "<<ysize;
+//     float * new_Rotated_frmData= new float[xsize*ysize];
+//       int mid=xsize/2;
+//        double index_i = 0.0 , index_j = 0.0 ;
+//       double  ctheta = cos ((double)(-theta_val * M_PI / 180)) ;
+//        double stheta = sin ((double)(-theta_val * M_PI / 180) );
+//       // ctheta= cos (1.0*M_PI/180);
+//        //stheta=sin(1.0*M_PI/180);
+//        int i1,j1;
+//        for (int i = 0 ; i < xsize ; i++)
+//        {
+//            i1 = i - mid ;
+//            for (int j = 0 ; j < ysize ; j++)
+//            {
+//                // if(subSignalArray[i][j]!=INVALID_PIX_VALUE){
+//                      j1 = j - mid ;
+//                /*applying new_delta_theta[index] degree rotation to find out new pixel indexes */
+//                index_i =   ((i1 * ctheta) - (j1 * stheta)) + mid ; //new index x
+//                index_j =   ((i1 * stheta) + (j1 * ctheta)) + mid ; //new index y
+//             //   round (index_i) ;
+//              //  round (index_j) ;
+//                if (index_i > -1 && index_i < xsize && index_j > -1 && index_j < ysize)
+//                { /*appling correction i.e xshift,yshift ,rotation.*/
+//                 // new_Rotated_frmData[(int) ( round(index_j)*xsize+round(index_i))] = framedata[j*xsize+i] ;                  
+//                    new_Rotated_frmData[(int)  (round(index_j)*xsize+round(index_i))] = framedata[j*xsize+i] ;                  
+//                }
+//                
+//             }         
+//        }
+     
+//         status=findStar_algo1 (new_Rotated_frmData);
+//          status=findStar_algo1 (framedata);
+//         for(int i=0;i<Cx.size ();i++)
+//         {
+//        status=convertToUVITAxes(Cx[i],Cy[i],uvit_x,uvit_y,uvit_z);
+//        if(status)
+//        {
+//            LOG(ERROR)<<"Error in Converting to UVIT axes for co-ordinate X::"<<Cx[i]<<" Y:: "<<Cy[i]<<endl;
+//            return(EXIT_FAILURE);            
+//        }
+//        //added 
+////       uvit_x=0;uvit_y=1;uvit_z=0;
+//        status = toNormalize(uvit_x,uvit_y,uvit_z,normal_x,normal_y,normal_z);
+//        if(status)
+//            {
+//                LOG (ERROR) << "Error in normalizing" ;
+//                return (EXIT_FAILURE) ;
+//            }
+//       Axis uvitnormal(normal_y,normal_z,normal_x);                              //considering UVIT center normal axis be Y axis
+//    //Axis  uvitnormal(0.0,1.0,0.0);            
+//    //uvitnormal.normalize();
+//    Axis uvitnormal_inertial; 
+//        rotate(uvitnormal,qbi,uvitnormal_inertial);
+//         
+//    x = uvitnormal_inertial.x;
+//    y = uvitnormal_inertial.y;
+//    z = uvitnormal_inertial.z;
+//    uvitnormal_inertial.update(x,y,z);
+//    uvitnormal_inertial.normalize();
+//   // LOG(INFO)<<"UVIT Inertial ";         
+//    uvitnormal_inertial.display();
+//
+//    star_ra = atan2( uvitnormal_inertial.y, uvitnormal_inertial.x);
+//    star_dec = asin(uvitnormal_inertial.z) ;
+//    
+//    star_ra = star_ra *180/M_PI;
+//    star_dec = star_dec * 180/M_PI;
+//    
+//     if (star_ra < 0 )
+//     { 
+//        star_ra = star_ra+360;
+//     }
+//  temp<<Cx[i]<<" "<<Cy[i]<<" "<<setprecision (20)<<star_ra<<setprecision (20)<<"  "<<star_dec<<endl;
+//  RA_img_Stars.push_back (star_ra);
+//  DEC_img_Stars.push_back (star_dec);
+//        }
+         
+         
+         
+        //for center
+ 
+        
+//      float mid_x=4800/2;
+//      float  mid_y=4800/2;
+//      status=convertToUVITAxes(mid_x,mid_y,uvit_x,uvit_y,uvit_z);
+//        if(status)
+//        {
+//            LOG(ERROR)<<"Error in Converting to UVIT axes for co-ordinate X::"<<IMG_DIM_DI/2<<" Y:: "<<IMG_DIM_DI/2<<endl;
+//            return(EXIT_FAILURE);            
+//        }
+//        status = toNormalize(uvit_x,uvit_y,uvit_z,normal_x,normal_y,normal_z);
+//        if(status)
+//            {
+//                LOG (ERROR) << "Error in normalizing" ;
+//                return (EXIT_FAILURE) ;
+//            }
+//       Axis uvitnormal(normal_y,normal_z,normal_x);                              //considering UVIT center normal axis be Y axis
+//  //  Axis  uvitnormal(0.0,1.0,0.0);            
+//    //uvitnormal.normalize();
+//    Axis uvitnormal_inertial; 
+//        rotate(uvitnormal,qbi,uvitnormal_inertial);
+//         
+//    x = uvitnormal_inertial.x;
+//    y = uvitnormal_inertial.y;
+//    z = uvitnormal_inertial.z;
+//    uvitnormal_inertial.update(x,y,z);
+//    uvitnormal_inertial.normalize();
+//    LOG(INFO)<<"UVIT Inertial ";           uvitnormal_inertial.display();
+//
+//    center_ra = atan2( uvitnormal_inertial.y, uvitnormal_inertial.x);
+//    center_dec = asin(uvitnormal_inertial.z) ;
+//    
+//    center_ra = center_ra*180/M_PI;
+//    center_dec =center_dec * 180/M_PI;
+//      
+//     if (center_ra < 0 ) 
+//     { 
+//        center_ra = center_ra+360;
+//     }
+//    cout<<setprecision (20)<<"Center RA "<<center_ra<<setprecision (20)<<" Center Dec "<<center_dec<<endl;
+//    center_ra_prev=center_ra;
+//    center_dec_prev=center_dec;
+//    center_ra=center_ra+mean_Of_diffra;
+//    center_dec=center_dec+mean_Of_diffdec;
+//    
+//    cout<<setprecision (20)<<"Center RA "<<center_ra<<setprecision (20)<<" Center Dec "<<center_dec<<endl;
+//       int bitpix = FLOAT_IMG ;
+
+    
+    //    int naxis = 2 ;
+//    long naxes[2] ;
+//    naxes[0] = naxes[1] = xsize ;
+//    fits_create_file(&fout, imagefile_out, &status);
+//    printError(status," ",imagefile_out);
+//    
+//    fits_copy_file(fin,fout,1,1,1,&status);
+//    printError(status,"File cannot be copied",imagefile_in);
+//    
+//    fits_close_file(fin,&status);
+//    printError(status,"Error in closing file", imagefile_in);
+     
+  
+    
+//   addWCS(fout);
+//       
+//    LOG(INFO)<<"Output Image file created with WCS keywords"; 
+//       
+//    vector<string> historystr;
+//    if(history==YES)
+//    {
+//        getHistory(historystr);
+//        writeHistory(imagefile_out,historystr);
+//    }
+//    writeCommonKeywords(fout,modulename);
+//    fits_close_file(fout, &status);                 
+//    printError(status,"Error in  closing the file",imagefile_out);
+//    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+   //  double mean_diff_ra = 0.0;
+  //   double mean_diff_dec =0.0;
+//#if 0
+//   Database db;
+//   
+//   time_t st=time(NULL);
+//   string database = databasename;
+//    //open database
+//   LOG(INFO)<<"Opening Database...."<<databasename;
+//   if (!FileExists (databasename)) 
+//   {
+//       LOG(ERROR)<<"DataBase not found";
+//       return(EXIT_FAILURE);
+//   }
+//    db.openDatabase(database);
+//
+//    //call select
+//
+//  vector<string> usno_CAT2,radeg_CAT2,dedeg_CAT2,bmag_CAT2,rmag_CAT2,epoch_CAT2,nuvmag,errnuv,fuvmag,errfuv,nuvcounts,errcounts;
+//  char temp_ra[FLEN_FILENAME];
+//   char temp_dec[FLEN_FILENAME];
+//  sprintf(temp_ra," %f",center_ra);
+//  sprintf(temp_dec," %f",center_dec);
+//  db.select(usno_CAT2,radeg_CAT2,dedeg_CAT2,bmag_CAT2,rmag_CAT2,epoch_CAT2,(string)temp_ra,(string)temp_dec,nuvmag,errnuv,fuvmag,errfuv,nuvcounts,errcounts,search_algo_ctlg,len_a,len_b);
+//  cout<<radeg_CAT2.size ()<<endl;
+//  if(radeg_CAT2.size ()==0)
+//  {
+//      LOG(ERROR)<<"No  related record found from Database for RA :: "<<(string)temp_ra<<" and DEC ::"<<(string)temp_dec;
+//      mean_diff_ra=0.0f;
+//      mean_diff_dec=0.0f;
+//  }
+//  else{
+//      
+//  vector<float> CAT1_ra,CAT2_ra,CAT1_dec,CAT2_dec;
+//   vector<float> CAT1_ra_final,CAT2_ra_final,CAT1_dec_final,CAT2_dec_final;
+//   vector<float> dist_vect;
+//   int index_value;
+//   float min_value;
+//   //cout<<radeg_CAT2.size ()<<endl;exit(1);
+//  for (int i=0;i<RA_img_Stars.size ();i++)
+//  {
+//      CAT1_ra.clear (); CAT2_ra.clear ();CAT1_dec.clear ();CAT2_dec.clear ();dist_vect.clear ();
+//      for(int j=0;j<radeg_CAT2.size ();j++)
+//      {
+//          if(sqrt((RA_img_Stars[i]-atof(radeg_CAT2[j].c_str ()))*(RA_img_Stars[i]-atof (radeg_CAT2[j].c_str ())) + (DEC_img_Stars[i]-atof(dedeg_CAT2[j].c_str ()))*(DEC_img_Stars[i]-atof(dedeg_CAT2[j].c_str ())))<(float)3/60)
+//          {
+//              
+//             CAT1_ra.push_back (RA_img_Stars[i]);
+//             CAT2_ra.push_back (atof(radeg_CAT2[j].c_str ()));
+//             CAT1_dec.push_back (DEC_img_Stars[i]);
+//             CAT2_dec.push_back (atof(dedeg_CAT2[j].c_str ()));             
+//             dist_vect.push_back (sqrt((RA_img_Stars[i]-atof(radeg_CAT2[j].c_str ()))*(RA_img_Stars[i]-atof (radeg_CAT2[j].c_str ())) + (DEC_img_Stars[i]-atof(dedeg_CAT2[j].c_str ()))*(DEC_img_Stars[i]-atof(dedeg_CAT2[j].c_str ()))));
+//             cout<<sqrt((RA_img_Stars[i]-atof(radeg_CAT2[j].c_str ()))*(RA_img_Stars[i]-atof (radeg_CAT2[j].c_str ())) + (DEC_img_Stars[i]-atof(dedeg_CAT2[j].c_str ()))*(DEC_img_Stars[i]-atof(dedeg_CAT2[j].c_str ())))<<endl;
+//          }          
+//      }
+//      if(dist_vect.size ()==0)
+//      {
+//         
+//          continue;
+//      }
+//      
+//      index_value=0;
+//      sort(dist_vect.begin (),dist_vect.end ());
+//      min_value=dist_vect[0];              
+//      for(int index=0;index<dist_vect.size ();index++)
+//      {         
+//        if(min_value>dist_vect[index])  
+//        {
+//            index_value=index;
+//        }
+//      }
+//      
+//      CAT1_ra_final.push_back (CAT1_ra[index_value]);
+//      CAT1_dec_final.push_back (CAT1_dec[index_value]);
+//      CAT2_ra_final.push_back (CAT2_ra[index_value]);
+//      CAT2_dec_final.push_back (CAT2_dec[index_value]);
+//          
+//  }
+  //close database
+  
+   
+   
+   //added
+   
+//   spMatrix RaDec(2*RA_img_Stars.size (),6);
+//   spMatrix coeff_matrix(6,1);
+// spMatrix Cat_RaDec(2*RA_img_Stars.size (),1);  
+// LOG(INFO)<<CAT1_ra_final.size ()<<" "<<CAT2_dec_final.size ();
+// for (int i=0;i<CAT1_ra_final.size ();i++)
+// {
+//     RaDec(2*i,0)=1;    RaDec(2*i,1)=CAT1_ra_final[i];  RaDec(2*i,2)=CAT1_dec_final[i];  RaDec(2*i,3)=0;  RaDec(2*i,4)=0; RaDec(2*i,5)=0;
+//      RaDec(2*i+1,0)=0;    RaDec(2*i+1,1)=0;  RaDec(2*i+1,2)=0;  RaDec(2*i+1,3)=1;  RaDec(2*i+1,4)=CAT1_ra_final[i]; RaDec(2*i+1,5)=CAT1_dec_final[i];
+//      Cat_RaDec(2*i,0)=CAT2_ra_final[i];
+//      Cat_RaDec(2*i+1,0)=CAT2_dec_final[i];
+// }
+// coeff_matrix.ApplyLeastSquare (RaDec,Cat_RaDec);
+// LOG(INFO)<<coeff_matrix;
+//   //till this
+//    db.closeDatabase();
+//    double  sd_ra,sd_dec,sd_ra_afterMeanSub,sd_dec_afterMeanSub;
+//   time_t et=time(NULL);
+//   vector<float> diff_ra,diff_dec,diff_ra_afterMeanSub,diff_dec_afterMeanSub;
+//   vector<float> diff_dist;
+//   if(CAT1_dec_final.size ()!=0){
+//   for (int i=0;i<CAT1_dec_final.size ();i++){
+//        diff_ra.push_back (CAT1_ra_final[i]-CAT2_ra_final[i]);
+//        diff_dec.push_back (CAT1_dec_final[i]-CAT2_dec_final[i]);
+//       
+//   }
+//    for (int i=0;i<CAT1_dec_final.size ();i++)
+//    {
+//        diff_dist.push_back (sqrt(diff_ra[i]*diff_ra[i] +diff_dec[i]*diff_dec[i]));
+//        
+//    }
+//   mean_diff_ra=getmean (diff_dist.data (),diff_dist.size ());
+//  //mean_diff_dec=getmean(diff_dec.data (),diff_dec.size ());
+//  sd_ra=getSD (diff_dist.data (),diff_dist.size ());
+//  //sd_dec=getSD (diff_ra.data (),diff_ra.size ());
+//   }
+//   else{
+//       mean_diff_dec=0.0;
+//       mean_diff_ra=0.0;
+//   }
+//   //take mean
+//  
+//  
+//   
+//  //cout<<"the mean "<<" "<<mean_diff_dec<<" "<<mean_diff_ra<<endl;
+//   //remove points above 3*Mean value
+//   if(diff_ra.size ()!=0){
+//   for (int i=0;i<diff_dist.size ();i++)
+//   {   
+//     if(diff_dist[i]<mean_diff_ra+3*sd_ra)
+//     {  
+//         diff_ra_afterMeanSub.push_back (diff_dist[i]);
+//     }
+////      if(diff_dec[i]<mean_diff_dec+3*sd_dec)
+////     {  
+////         diff_dec_afterMeanSub.push_back (diff_ra[i]);
+////     }
+//   }
+//   LOG(INFO)<<diff_dec_afterMeanSub.size ();
+//   mean_diff_ra=getmean (diff_ra_afterMeanSub.data (),diff_ra_afterMeanSub.size ());
+////mean_diff_dec=getmean(diff_dec_afterMeanSub.data (),diff_dec_afterMeanSub.size ());
+//   }
+//   else
+//   {
+//       mean_diff_dec=0.0;
+//       mean_diff_ra=0.0;
+//   }
+     
+   
+   //again taking mean;
+   
+
+//} 
+  
+//#endif
+   //add into center ra dec.
+//  cout<<center_ra<<" "<<center_dec<<endl;
+//center_ra=center_ra-mean_diff_ra;
+//center_dec=center_dec-mean_diff_ra;
+//cout<<center_ra<<" "<<center_dec<<endl;
+//
+//
+//         LOG(INFO)<<"Qbi ";                     qbi.display();
+//   
+//    
+//  //till this  
+//         int bitpix = FLOAT_IMG ;
+//    int naxis = 2 ;
+//    long naxes[2] ;
+//    naxes[0] = naxes[1] = xsize ;
+//    fits_create_file(&fout, imagefile_out, &status);
+//    printError(status," ",imagefile_out);
+//    
+//    //fits_copy_file(fin,fout,1,1,1,&status);
+//   // printError(status,"File cannot be copied",imagefile_in);
+//       fits_create_img (fout , bitpix , naxis , naxes , &status) ;
+//        printError (status , "Error creating the image Signal file" , imagefile_out) ;
+//        fits_write_pix (fout , TFLOAT , fpixel , xsize*ysize ,new_Rotated_frmData  , &status) ;
+//        printError (status , "Error in writing the pixels to output file" , imagefile_out) ;
+//    
+//    fits_close_file(fin,&status);
+//    printError(status,"Error in closing file", imagefile_in);
+//     
+//  
+//    
+//   addWCS(fout);
+//       
+//    LOG(INFO)<<"Output Image file created with WCS keywords"; 
+//       
+//    vector<string> historystr;
+//    if(history==YES){
+//        getHistory(historystr);
+//        writeHistory(imagefile_out,historystr);
+//    }
+//    writeCommonKeywords(fout,modulename);
+//    fits_close_file(fout, &status);                 
+//    printError(status,"Error in  closing the file",imagefile_out);
+//      
+     
+    return (EXIT_SUCCESS);
+    
+    
+    
+    
+
+}
+
+//int uvtFullFrameAst::uvtFullFrmAstProcess() 
+//{
+//    
+//    LOG(INFO)<< "Full Frame Astrometry process started";
+//    sprintf(moduleoutdir, "%s/%s/", outdir, modulename);
+//    
+//    if(createOutputDirectory(clobber, moduleoutdir))  
+//        return (EXIT_FAILURE);
+// 
+//    LOG(INFO)<<"\033[1;34m"<<inputdatadir<<"\033[0m";
+//    const char *tempimagefile = searchFile(inputdatadir, "_sig_rg.fits");
+//    if (strcmp (tempimagefile,"")==0){
+//      tempimagefile = searchFile(inputdatadir, "_sig_snl.fits");
+//         if (strcmp (tempimagefile,"")==0){
+//             LOG(ERROR)<<"Input Directory does not contain required file"<<endl;
+//             return(EXIT_FAILURE);
+//         }
+//    }
+//    
+//    sprintf (imagefile_in, "%s/%s", inputdatadir, tempimagefile);              //input image file path
+//     
+//    readKeywords(imagefile_in,1,1,TSTRING,"NAMEPRFX",nameprefix);
+//    sprintf(imagefile_out,"%s/%s_as.fits",moduleoutdir,nameprefix);                 //ouptut image file path
+//           long fpixel[2] ;
+//    fpixel[0] = fpixel[1] = 1 ;
+//     fitsfile  *fin, *fout;    //, *fteldef;
+//     int status = 0;
+//     float *framedata= new float[600*600];
+//    fits_open_file(&fin,imagefile_in,READONLY,&status);
+//    printError(status, "File cannot be opened",imagefile_in);
+//    datainfo.getInfo(fin);
+//    
+//  
+//    fits_read_pix (fin , TFLOAT , fpixel , 600*600 , NULL , framedata , NULL , &status) ;
+//     printError (status , "Error in reading the pixels from the input File" , imagefile_in) ;
+//     xsize=ysize=600;
+//    sd_mul_factor = sd_multi_factor_default ;
+//    status=findStar_algo1 (framedata);
+//   double uvit_x,uvit_y,uvit_z,normal_x,normal_y,normal_z;
+//    
+////forming alignment matrix  from individual detector to spacecraft
+//double ALIGNM11_F=-1;  double ALIGNM11_N= -0.8541 ; double ALIGNM11_V=-0.8291;
+//double ALIGNM12_F=0;   double ALIGNM12_N= -0.5239 ; double ALIGNM12_V=0.5581;
+//double ALIGNM13_F=0;   double ALIGNM13_N= 0       ;  double ALIGNM13_V=0;
+//double ALIGNM21_F=0;   double ALIGNM21_N= 0       ;  double ALIGNM21_V=0;
+//double ALIGNM22_F=0;   double ALIGNM22_N= 0       ;  double ALIGNM22_V=0;
+//double ALIGNM23_F=1;   double ALIGNM23_N= 1       ;  double ALIGNM23_V=1;
+//double ALIGNM31_F=0;   double ALIGNM31_N= 0.5239  ;  double ALIGNM31_V=0.5581;
+//double ALIGNM32_F=1;   double ALIGNM32_N= -0.8541;  double ALIGNM32_V=0.8291;
+//double ALIGNM33_F=0;   double ALIGNM33_N= 0       ;  double ALIGNM33_V=0.0;
+//
+//   
+//// double ALIGNM11_F=1;  double ALIGNM11_N= 1 ; double ALIGNM11_V=1;
+////double ALIGNM12_F=0;   double ALIGNM12_N= 0 ; double ALIGNM12_V=0;
+////double ALIGNM13_F=0;   double ALIGNM13_N= 0       ;  double ALIGNM13_V=0;
+////double ALIGNM21_F=0;   double ALIGNM21_N= 0       ;  double ALIGNM21_V=0;
+////double ALIGNM22_F=1;   double ALIGNM22_N= 1       ;  double ALIGNM22_V=1;
+////double ALIGNM23_F=0;   double ALIGNM23_N= 0       ;  double ALIGNM23_V=0;
+////double ALIGNM31_F=0;   double ALIGNM31_N= 0  ;  double ALIGNM31_V=0;
+////double ALIGNM32_F=0;   double ALIGNM32_N= 0;  double ALIGNM32_V=0;
+////double ALIGNM33_F=1;   double ALIGNM33_N= 1       ;  double ALIGNM33_V=1;
+//
+//if(strcmp(datainfo.getDetector (),"NUV")==0)
+//{
+//    uvitAlign.q1=(sqrt(1+ALIGNM11_N+ALIGNM22_N+ALIGNM33_N))/2.0;
+//    uvitAlign.q2=(ALIGNM32_N-ALIGNM23_N)/(4*uvitAlign.q1);
+//    uvitAlign.q3=(ALIGNM13_N-ALIGNM31_N)/(4*uvitAlign.q1);
+//    uvitAlign.q4=(ALIGNM21_N-ALIGNM12_N)/(4*uvitAlign.q1);
+//}
+//if(strcmp(datainfo.getDetector (),"FUV")==0)
+//{
+//    uvitAlign.q1=(sqrt(1+ALIGNM11_F+ALIGNM22_F+ALIGNM33_F))/2.0;
+//    uvitAlign.q2=(ALIGNM32_F-ALIGNM23_F)/(4*uvitAlign.q1);
+//    uvitAlign.q3=(ALIGNM13_F-ALIGNM31_F)/(4*uvitAlign.q1);
+//    uvitAlign.q4=(ALIGNM21_F-ALIGNM12_F)/(4*uvitAlign.q1);
+//}
+//if(strcmp(datainfo.getDetector (),"VIS")==0)
+//{
+//    uvitAlign.q1=(sqrt(1+ALIGNM11_V+ALIGNM22_V+ALIGNM33_V))/2.0;
+//    uvitAlign.q2=(ALIGNM32_V-ALIGNM23_V)/(4*uvitAlign.q1);
+//    uvitAlign.q3=(ALIGNM13_V-ALIGNM31_V)/(4*uvitAlign.q1);
+//    uvitAlign.q4=(ALIGNM21_V-ALIGNM12_V)/(4*uvitAlign.q1);
+//}
+//    LOG(INFO)<<"UVIT alignment quaternion is ("<<uvitAlign.q1<<","<<
+//                        uvitAlign.q2<<","<<uvitAlign.q3<<","<<uvitAlign.q4<<")";
+//
+//    //Reading UVIT attitude from attitude file
+//    Attitude attvect;
+//    vector<Attitude> temp_vect_To_delete;
+////Get atttitude at given frame time 
+//    if(datainfo.getModeFlag ()==IM){
+//        status = readAttitude(attitudefile,att_timecol,att_qcol,datainfo.getTstart(),datainfo.getTstop(),attvect,temp_vect_To_delete);
+//    if(status) {
+//        LOG(ERROR)<<"\033[1;31m***Error reading attitude data ***\033[0m";
+//        return(EXIT_FAILURE);
+//    }
+//    }
+//    else if(datainfo.getModeFlag ()==PC){
+//           status = readAttitude(attitudefile,att_timecol,att_qcol,datainfo.getTstart()/1000,datainfo.getTstop()/1000,attvect,temp_vect_To_delete);
+//    if(status) {
+//        LOG(ERROR)<<"\033[1;31m***Error reading attitude data ***\033[0m";
+//        return(EXIT_FAILURE);
+//    }
+//    }
+//    
+////    for (int i=0;i<temp_vect_To_delete.size ();i++){
+////        LOG(INFO)<<" pppp"<<temp_vect_To_delete[i].q1<< " "<<temp_vect_To_delete[i].q2<<" "<<temp_vect_To_delete[i].q3<<" "<<temp_vect_To_delete[i].q4;
+////    }
+//    
+//    ofstream temp("star_radec.txt");
+//    for (int i=0;i<temp_vect_To_delete.size ();i++)
+//    { 
+//        
+//        
+//   Q qbi;                   //body to inertial quaternion at time t;
+//    //cout<<attvect.q1<<" "<<attvect.q2<<" "<<attvect.q3<<" "<<attvect.q4<<endl;
+//         Q qatt(temp_vect_To_delete[i].q4,temp_vect_To_delete[i].q1,temp_vect_To_delete[i].q2,temp_vect_To_delete[i].q3);
+//         quaternion_product(qatt,uvitAlign,qbi);
+//         qbi.normalize();
+////end of forming alignment matrix
+// 
+////   ofstream ofptr;
+//  //  ofptr.open ("temp.txt",ios::out);
+//  //for each X,Y of stars
+//     // Axis uvitnormal;
+//      double x,y,z;
+//      vector<float> RA_img_Stars,DEC_img_Stars;
+//   
+//      //for(int i=0;i<nelements;i++)
+////    for(int i=0;i<Cx.size ();i++)
+////    {
+//        status=convertToUVITAxes(Cx[0],Cy[0],uvit_x,uvit_y,uvit_z);
+//        if(status)
+//        {
+//            LOG(ERROR)<<"Error in Converting to UVIT axes for co-ordinate X::"<<Cx[i]<<" Y:: "<<Cy[i]<<endl;
+//            return(EXIT_FAILURE);            
+//        }
+//        //added 
+//       uvit_x=0;uvit_y=0;uvit_z=1;
+//        status = toNormalize(uvit_x,uvit_y,uvit_z,normal_x,normal_y,normal_z);
+//        if(status)
+//            {
+//                LOG (ERROR) << "Error in normalizing" ;
+//                return (EXIT_FAILURE) ;
+//            }
+//       Axis uvitnormal(normal_y,normal_z,normal_x);                              //considering UVIT center normal axis be Y axis
+//    //Axis  uvitnormal(0.0,1.0,0.0);            
+//    //uvitnormal.normalize();
+//    Axis uvitnormal_inertial; 
+//        rotate(uvitnormal,qbi,uvitnormal_inertial);
+//         
+//    x = uvitnormal_inertial.x;
+//    y = uvitnormal_inertial.y;
+//    z = uvitnormal_inertial.z;
+//    uvitnormal_inertial.update(x,y,z);
+//    uvitnormal_inertial.normalize();
+//   // LOG(INFO)<<"UVIT Inertial ";         
+//    uvitnormal_inertial.display();
+//
+//    star_ra = atan2( uvitnormal_inertial.y, uvitnormal_inertial.x);
+//    star_dec = asin(uvitnormal_inertial.z) ;
+//    
+//    star_ra = star_ra *180/M_PI;
+//    star_dec = star_dec * 180/M_PI;
+//    
+//     if (star_ra < 0 )
+//     { 
+//        star_ra = star_ra+360;
+//     }
+//  temp<<star_ra<<setprecision (20)<<"  "<<star_dec<<endl;
+//  RA_img_Stars.push_back (star_ra);
+//  DEC_img_Stars.push_back (star_dec);
+// // }
+//     
+//    }
+//        temp.close ();
+////      
+//        
+//    
+//    //to be removed 
+////    Q qbi;                   //body to inertial quaternion at time t;
+////    //cout<<attvect.q1<<" "<<attvect.q2<<" "<<attvect.q3<<" "<<attvect.q4<<endl;
+////         Q qatt(attvect.q4,attvect.q1,attvect.q2,attvect.q3);
+////         quaternion_product(qatt,uvitAlign,qbi);
+////         qbi.normalize();
+//////end of forming alignment matrix
+//// 
+//////   ofstream ofptr;
+////  //  ofptr.open ("temp.txt",ios::out);
+////  //for each X,Y of stars
+////     // Axis uvitnormal;
+////      double x,y,z;
+////      vector<float> RA_img_Stars,DEC_img_Stars;
+////      ofstream temp("star_radec.txt");
+////      //for(int i=0;i<nelements;i++)
+////    for(int i=0;i<Cx.size ();i++)
+////    {
+////        status=convertToUVITAxes(Cx[i],Cy[i],uvit_x,uvit_y,uvit_z);
+////        if(status)
+////        {
+////            LOG(ERROR)<<"Error in Converting to UVIT axes for co-ordinate X::"<<Cx[i]<<" Y:: "<<Cy[i]<<endl;
+////            return(EXIT_FAILURE);            
+////        }
+////        //added 
+//////       uvit_x=0;uvit_y=1;uvit_z=0;
+////        status = toNormalize(uvit_x,uvit_y,uvit_z,normal_x,normal_y,normal_z);
+////        if(status)
+////            {
+////                LOG (ERROR) << "Error in normalizing" ;
+////                return (EXIT_FAILURE) ;
+////            }
+////       Axis uvitnormal(normal_y,normal_z,normal_x);                              //considering UVIT center normal axis be Y axis
+////    //Axis  uvitnormal(0.0,1.0,0.0);            
+////    //uvitnormal.normalize();
+////    Axis uvitnormal_inertial; 
+////        rotate(uvitnormal,qbi,uvitnormal_inertial);
+////         
+////    x = uvitnormal_inertial.x;
+////    y = uvitnormal_inertial.y;
+////    z = uvitnormal_inertial.z;
+////    uvitnormal_inertial.update(x,y,z);
+////    uvitnormal_inertial.normalize();
+////   // LOG(INFO)<<"UVIT Inertial ";         
+////    uvitnormal_inertial.display();
+////
+////    star_ra = atan2( uvitnormal_inertial.y, uvitnormal_inertial.x);
+////    star_dec = asin(uvitnormal_inertial.z) ;
+////    
+////    star_ra = star_ra *180/M_PI;
+////    star_dec = star_dec * 180/M_PI;
+////    
+////     if (star_ra < 0 )
+////     { 
+////        star_ra = star_ra+360;
+////     }
+////  temp<<Cx[i]<<" "<<Cy[i]<<" "<<setprecision (20)<<star_ra<<setprecision (20)<<"  "<<star_dec<<endl;
+////  RA_img_Stars.push_back (star_ra);
+////  DEC_img_Stars.push_back (star_dec);
+////  }
+////      temp.close ();
+////      
+//      //till thiss.
+//   
+//        
+//        
+//        //for center
+//      /* 
+//        
+//      float mid_x=IMG_DIM_DI/2;
+//      float  mid_y=IMG_DIM_DI/2;
+//      status=convertToUVITAxes(mid_x,mid_y,uvit_x,uvit_y,uvit_z);
+//        if(status)
+//        {
+//            LOG(ERROR)<<"Error in Converting to UVIT axes for co-ordinate X::"<<IMG_DIM_DI/2<<" Y:: "<<IMG_DIM_DI/2<<endl;
+//            return(EXIT_FAILURE);            
+//        }
+//        status = toNormalize(uvit_x,uvit_y,uvit_z,normal_x,normal_y,normal_z);
+//        if(status)
+//            {
+//                LOG (ERROR) << "Error in normalizing" ;
+//                return (EXIT_FAILURE) ;
+//            }
+//       Axis uvitnormal(normal_y,normal_z,normal_x);                              //considering UVIT center normal axis be Y axis
+//  //  Axis  uvitnormal(0.0,1.0,0.0);            
+//    //uvitnormal.normalize();
+//    Axis uvitnormal_inertial; 
+//        rotate(uvitnormal,qbi,uvitnormal_inertial);
+//         
+//    x = uvitnormal_inertial.x;
+//    y = uvitnormal_inertial.y;
+//    z = uvitnormal_inertial.z;
+//    uvitnormal_inertial.update(x,y,z);
+//    uvitnormal_inertial.normalize();
+//    LOG(INFO)<<"UVIT Inertial ";           uvitnormal_inertial.display();
+//
+//    center_ra = atan2( uvitnormal_inertial.y, uvitnormal_inertial.x);
+//    center_dec = asin(uvitnormal_inertial.z) ;
+//    
+//    center_ra = center_ra*180/M_PI;
+//    center_dec =center_dec * 180/M_PI;
+//      
+//     if (center_ra < 0 ) { 
+//        center_ra = center_ra+360;
+//     }
+//    cout<<setprecision (20)<<"Center RA "<<center_ra<<setprecision (20)<<" Center Dec "<<center_dec<<endl;
+//   
+//     double mean_diff_ra = 0.0;
+//     double mean_diff_dec =0.0;
+////#if 0
+//   Database db;
+//   
+//   time_t st=time(NULL);
+//   string database = databasename;
+//    //open database
+//   LOG(INFO)<<"Opening Database "<<databasename;
+//    db.openDatabase(database);
+//
+//    //call select
+//
+//  vector<string> usno_CAT2,radeg_CAT2,dedeg_CAT2,bmag_CAT2,rmag_CAT2,epoch_CAT2;
+//  char temp_ra[FLEN_FILENAME];
+//   char temp_dec[FLEN_FILENAME];
+//  sprintf(temp_ra," %f",center_ra);
+//  sprintf(temp_dec," %f",center_dec);
+//  db.select(usno_CAT2,radeg_CAT2,dedeg_CAT2,bmag_CAT2,rmag_CAT2,epoch_CAT2,(string)temp_ra,(string)temp_dec);
+//    
+//  if(usno_CAT2.size ()==0)
+//  {
+//      LOG(ERROR)<<"No  related record found from Database for RA :: "<<(string)temp_ra<<" and DEC ::"<<(string)temp_dec;
+//      mean_diff_ra=0.0f;
+//      mean_diff_dec=0.0f;
+//  }
+//  else{
+//  vector<float> CAT1_ra,CAT2_ra,CAT1_dec,CAT2_dec;
+//   vector<float> CAT1_ra_final,CAT2_ra_final,CAT1_dec_final,CAT2_dec_final;
+//   vector<float> dist_vect;
+//   int index_value;
+//   float min_value;
+//  for (int i=0;i<RA_img_Stars.size ();i++)
+//  {
+//      CAT1_ra.clear (); CAT2_ra.clear ();CAT1_dec.clear ();CAT2_dec.clear ();dist_vect.clear ();
+//      for(int j=0;j<radeg_CAT2.size ();j++)
+//      {
+//          if(sqrt((RA_img_Stars[i]-atof(radeg_CAT2[j].c_str ()))*(RA_img_Stars[i]-atof (radeg_CAT2[j].c_str ())) + (DEC_img_Stars[i]-atof(dedeg_CAT2[j].c_str ()))*(DEC_img_Stars[i]-atof(dedeg_CAT2[j].c_str ())))<3/3600)
+//          {
+//             CAT1_ra.push_back (RA_img_Stars[i]);
+//             CAT2_ra.push_back (atof(radeg_CAT2[j].c_str ()));
+//             CAT1_dec.push_back (DEC_img_Stars[i]);
+//             CAT2_dec.push_back (atof(dedeg_CAT2[j].c_str ()));             
+//             dist_vect.push_back (sqrt((RA_img_Stars[i]-atof(radeg_CAT2[j].c_str ()))*(RA_img_Stars[i]-atof (radeg_CAT2[j].c_str ())) + (DEC_img_Stars[i]-atof(dedeg_CAT2[j].c_str ()))*(DEC_img_Stars[i]-atof(dedeg_CAT2[j].c_str ()))));
+//          }          
+//      }
+//      index_value=0;
+//      min_value=dist_vect[0];              
+//      for(int index=0;index<dist_vect.size ();index++)
+//      {         
+//        if(min_value>dist_vect[index])  
+//        {
+//            index_value=index;
+//        }
+//      }
+//      CAT1_ra_final.push_back (CAT1_ra[index_value]);
+//      CAT1_dec_final.push_back (CAT1_dec[index_value]);
+//      CAT2_ra_final.push_back (CAT2_ra[index_value]);
+//      CAT2_dec_final.push_back (CAT2_dec[index_value]);
+//          
+//  }
+//  //close database
+//    
+//    db.closeDatabase();
+//    
+//   time_t et=time(NULL);
+//   vector<float> diff_ra,diff_dec,diff_ra_afterMeanSub,diff_dec_afterMeanSub;
+//   
+//   for (int i=0;i<CAT1_dec_final.size ();i++){
+//       diff_ra.push_back (CAT1_ra_final[i]-CAT2_ra_final[i]);
+//        diff_dec.push_back (CAT1_dec_final[i]-CAT2_dec_final[i]);
+//       
+//   }
+//   
+//   //take mean
+//    mean_diff_ra=getmean (diff_ra.data (),diff_ra.size ());
+//  mean_diff_dec=getmean(diff_dec.data (),diff_dec.size ());
+//   
+//   
+//   //remove points above 3*Mean value
+//   for (int i=0;i<diff_ra.size ();i++)
+//   {   
+//     if(diff_ra[i]<3*mean_diff_ra)
+//     {  
+//         diff_ra_afterMeanSub.push_back (diff_ra[i]);
+//     }
+//      if(diff_dec[i]<3*mean_diff_dec)
+//     {  
+//         diff_dec_afterMeanSub.push_back (diff_ra[i]);
+//     }
+//   }
+//           
+//   
+//   //again taking mean;
+//   
+//mean_diff_ra=getmean (diff_ra_afterMeanSub.data (),diff_ra_afterMeanSub.size ());
+//mean_diff_dec=getmean(diff_dec_afterMeanSub.data (),diff_dec_afterMeanSub.size ());
+//} 
+//  
+////#endif
+//   //add into center ra dec.
+//center_ra=center_ra-mean_diff_ra;
+//center_dec=center_dec-mean_diff_dec;
+//
+//
+//
+//
+//
+//
+//        
+//
+//
+//
+//
+//         
+//
+//         LOG(INFO)<<"Qbi ";                     qbi.display();
+//   
+//         
+//    
+//    
+//    
+//  //till this  
+//    fits_create_file(&fout, imagefile_out, &status);
+//    printError(status," ",imagefile_out);
+//    
+//    fits_copy_file(fin,fout,1,1,1,&status);
+//    printError(status,"File cannot be copied",imagefile_in);
+//    
+//    
+//    fits_close_file(fin,&status);
+//    printError(status,"Error in closing file", imagefile_in);
+//     
+//  
+//    
+//    addWCS(fout);
+//       
+//    LOG(INFO)<<"Output Image file created with WCS keywords"; 
+//       
+//    vector<string> historystr;
+//    if(history==YES){
+//        getHistory(historystr);
+//        writeHistory(imagefile_out,historystr);
+//    }
+//    writeCommonKeywords(fout,modulename);
+//    fits_close_file(fout, &status);                 
+//    printError(status,"Error in  closing the file",imagefile_out);
+//      
+//    */   
+//    return (EXIT_SUCCESS);
+//      
+//
+//}
+
+int uvtFullFrameAst::addWCS(fitsfile *fout)
+{
+    
+    int status=0;
+    //const char *teldeffile = caldb_handler.getTelDefFile(caldbDir);
+    int xsize, ysize;
+    double xscale, yscale;    
+//    readKeywords((char *)teldeffile,1,5, TINT, (char *)"DET_XSIZ", &xsize,
+//                                                TINT,(char *)"DET_YSIZ",&ysize,
+//                                                TDOUBLE,(char *)"DET_XSCL",&xscale,
+//                                                TDOUBLE,(char *)"DET_YSCL", &yscale,
+//                                                TDOUBLE, (char *)"FOCALLEN",&focallength);
+    
+    xsize =4800; //teldef.det_xsiz;
+    ysize = 4800;//teldef.det_ysiz;
+     float cdelt1,cdelt2;
+    int factor_delta=xsize/600;
+    if(strcmp(datainfo.getDetector (),"VIS")==0)
+    {
+           cdelt1=(3.357/3600)/factor_delta;
+           cdelt2=(3.311/3600)/factor_delta;
+    }
+    else if (strcmp(datainfo.getDetector (),"FUV")==0){
+        //cdelt1=3.357/3600;
+       //  cdelt2=3.311/3600;
+       cdelt1=cdelt2=(3.3373/3600)/factor_delta;
+    }
+    else if(strcmp(datainfo.getDetector (),"NUV")==0){
+       cdelt1=cdelt2=(3.3307/3600)/factor_delta;
+       // cdelt1=cdelt2=(3.3307*factor_delta/3600)/;
+       
+    }
+   // cdelt1=-cdelt1/cos(center_dec*M_PI/180);
+     cdelt1=-cdelt1;///cos(center_dec*M_PI/180);
+//    xscale =3.32/3600; //teldef.det_xscl;
+//    yscale= 3.32/3600;//teldef.det_yscl;
+    
+    float crpix1 =  xsize/2.0;
+    float crpix2 =  ysize/2.0; 
+     //cdelt1 = (float) (atan(xscale / teldef.focal_len));               //in radians
+    // cdelt2 = (float) (atan(yscale / teldef.focal_len));               //in radians
+   
+   
+    //cdelt1 = cdelt1*180/M_PI;
+   // cdelt2 = cdelt2 *180/M_PI;
+    
+   // cdelt1=cdelt2=(float)atan((5.0/1000)/(512.0*FOCAL_LENGTH))*180.0/M_PI;
+    
+    //cdelt1=cdelt2=3.32/3600;
+    //twist=0;
+   // cdelt1=cdelt1*8;
+    //cdelt2=cdelt2*8;
+    
+    LOG(INFO)<<"cdelt1 :"<<cdelt1<<"  cdelt2:"<<cdelt2;
+    LOG(INFO)<<"Adding WCS keywords";
+    LOG(INFO)<<"CRPIX1 :"<<crpix1;
+    LOG(INFO)<<"CDELT1 :"<<cdelt1;
+    LOG(INFO)<<"CRVAL1 :"<<center_ra;
+    LOG(INFO)<<"CRPIX2 :"<<crpix2;
+    LOG(INFO)<<"CDELT2 :"<<cdelt2;
+    LOG(INFO)<<"CRVAL2 :"<<center_dec;   
+    LOG(INFO)<<"CROTA2 :"<<twist;
+  
+   fits_write_key(fout, TFLOAT, "CENTER_RA_fromQuartions", &center_ra_prev, "Right Ascension", &status);     printError(status,"Error in writing the key value of CENTER_RA_fromQuartions");
+   fits_write_key(fout, TFLOAT, "CENTER_DEC_fromQuartions", &center_dec_prev, "Declination", &status);     printError(status,"Error in writing the key value of CENTER_DEC_fromQuartions");
+     if(flag_Optic_Catalogue==1){
+        fits_write_key(fout, TSTRING, "Optic_Catalogue_flag ", (char*)"SUCCESS", "flag for Optic catalogue", &status);     printError(status,"Error in writing the key value of Optic_Catalogue_flag");
+         fits_write_key(fout, TINT, "TOTAL MATCH FOUND FROM CATALOGUE OPTIC ", &numStars_frmCatamatch_optic, "total matched stars", &status);   printError(status,"Error in writing the key value of UV_Catalogue_flag");
+     }
+     else if(flag_Optic_Catalogue==0){
+         fits_write_key(fout, TSTRING, "Optic_Catalogue_flag ", (char*)"FAILURE", "flag for Optic catalogue", &status);     printError(status,"Error in writing the key value of Optic_Catalogue_flag");
+         
+     }
+   if(flag_UV_Catalogue==1)
+   {
+       fits_write_key(fout, TSTRING, "UV_Catalogue_flag ", (char*)"SUCCESS", "flag for UV catalgue", &status);   printError(status,"Error in writing the key value of UV_Catalogue_flag");
+       fits_write_key(fout, TFLOAT, "CENTER_RA_UV ", &center_RA_UV, "flag for UV catalgue", &status);   printError(status,"Error in writing the key value of UV_Catalogue_flag");
+       fits_write_key(fout, TFLOAT, "CENTER_DEC_UV ", &center_DEC_UV, "flag for UV catalgue", &status);   printError(status,"Error in writing the key value of UV_Catalogue_flag");
+       fits_write_key(fout, TINT, "TOTAL MATCH FOUND FROM CATALOGUE UV ", &numStars_frmCatamatch_UV, "total matched stars", &status);   printError(status,"Error in writing the key value of UV_Catalogue_flag");
+   }
+   else if(flag_UV_Catalogue==0){
+       fits_write_key(fout, TSTRING, "UV_Catalogue_flag ", (char*)"FAILURE", "flag for UV catalgue", &status);   printError(status,"Error in writing the key value of UV_Catalogue_flag");
+   }
+   float  crota1=0;
+   float  crota2=0;
+   fits_write_key(fout, TSTRING, "CTYPE1", (char *) "RA---TAN", "Right Ascension", &status);     printError(status,"Error in writing the key value of RA-TAN");
+    fits_write_key(fout, TSTRING, "CUNIT1",(char *) "deg", "Unit", &status);                                   printError(status,"");
+    fits_write_key(fout, TFLOAT, "CRPIX1", &crpix1, "Reference Pixel", &status);                            printError(status,"");
+    fits_write_key(fout, TFLOAT, "CDELT1", &cdelt1, "", &status);                                                   printError(status,"");
+    fits_write_key(fout, TFLOAT, "CRVAL1", &center_ra, "", &status);                                              printError(status,"");  
+    fits_write_key(fout, TSTRING, "CTYPE2", (char *) "DEC--TAN", "", &status);                     printError(status,"");
+    fits_write_key(fout, TSTRING, "CUNIT2", (char *)"deg", "Unit", &status);                           printError(status,"");
+    fits_write_key(fout, TFLOAT, "CRPIX2", &crpix2, "Reference Pixel", &status);                    printError(status,"");
+    fits_write_key(fout, TFLOAT, "CDELT2", &cdelt2, "", &status);                                           printError(status,"");
+    fits_write_key(fout, TFLOAT, "CRVAL2", &center_dec, "", &status);                                    printError(status,"");   
+    fits_write_key(fout, TFLOAT, "CROTA2", &crota2, "Twist Angle", &status);                          printError(status,"");
+    fits_write_key(fout, TFLOAT, "CROTA1", &crota1, "Twist Angle", &status);                          printError(status,"");
+    fits_write_key(fout, TFLOAT, "ROLLangleapplied  ", &twist, "", &status);                          printError(status,"");
+    return(EXIT_SUCCESS);
+}
+
+//int uvtFullFrameAst::getRaDecTwist()
+//{
+//        
+//    int status=0;
+//    
+//     //Reading UVIT alignment from teldef file
+//    uvitAlign.q1=(sqrt(1+teldef.m11+teldef.m22+teldef.m33))/2.0;
+//    uvitAlign.q2=(teldef.m32-teldef.m23)/(4*uvitAlign.q1);
+//    uvitAlign.q3=(teldef.m13-teldef.m31)/(4*uvitAlign.q1);
+//    uvitAlign.q4=(teldef.m21-teldef.m12)/(4*uvitAlign.q1);
+//        
+//    LOG(INFO)<<"UVIT alignment quaternion is ("<<uvitAlign.q1<<","<<
+//                        uvitAlign.q2<<","<<uvitAlign.q3<<","<<uvitAlign.q4<<")";
+//
+//    //Reading UVIT attitude from attitude file
+//    vector<Attitude> attvect;
+//    status = readAttitude(attitudefile,att_timecol,att_qcol,datainfo.getTstart(),datainfo.getTstop(),attvect);
+//    if(status) {
+//        LOG(ERROR)<<"\033[1;31m***Error reading attitude data ***\033[0m";
+//        return(EXIT_FAILURE);
+//    }
+//       
+//    Axis uvitnormal(0,1,0);                              //considering UVIT center normal axis be Y axis
+//    uvitnormal.normalize();
+//    
+//    Axis uvitX(1,0,0);                      //x axis of UVIT payload, used for twist angle computation
+//    uvitX.normalize();
+//    
+//    Axis uvitnormal_inertial;                    //UVIT normal in inertial coordinates
+//    Axis uvitX_inertial;
+//    
+//    double sum_x=0,sum_y=0,sum_z=0,x,y,z;
+//    double sum_xt=0, sum_yt=0, sum_zt=0;
+//    
+//    for(long i=0;i<attvect.size();i++){
+//        
+//         Q qbi;                   //body to inertial quaternion at time t;
+//         Q qatt(attvect[i].q1,attvect[i].q2,attvect[i].q3,attvect[i].q4);
+//         
+//         //LOG(INFO)<<"Attitude Quaternion  ";       qatt.display();
+//                
+//         quaternion_product(qatt,uvitAlign,qbi);
+//         qbi.normalize();
+//         //LOG(INFO)<<"Qbi ";                     qbi.display();
+//         
+//         rotate(uvitnormal,qbi,uvitnormal_inertial);                        //for UVIT center vector
+//         
+//         sum_x+=uvitnormal_inertial.x;
+//         sum_y+=uvitnormal_inertial.y;
+//         sum_z+=uvitnormal_inertial.z;
+//         
+//         rotate(uvitX,qbi,uvitX_inertial);
+//         
+//         sum_xt+=uvitX_inertial.x;
+//         sum_yt+=uvitX_inertial.y;
+//         sum_zt+=uvitX_inertial.z;
+//     }
+//
+//    x = sum_x/attvect.size();        y=sum_y/attvect.size();       z= sum_z/attvect.size();
+//    uvitnormal_inertial.update(x,y,z);
+//    uvitnormal_inertial.normalize();
+//    LOG(INFO)<<"UVIT Inertial ";           uvitnormal_inertial.display();
+//  
+//    center_ra = acos( uvitnormal_inertial.y / sqrt(uvitnormal_inertial.x*uvitnormal_inertial.x+ uvitnormal_inertial.y*uvitnormal_inertial.y)) ;                         
+//    if(uvitnormal_inertial.y<0)                 center_ra = 2*M_PI-center_ra;
+//    center_dec = asin(uvitnormal_inertial.z) ;
+//    
+//    center_ra = center_ra*180/M_PI;
+//    center_dec = center_dec * 180/M_PI;
+//        
+//    //for twist angle
+//    x=sum_xt/attvect.size();          y=sum_yt/attvect.size();         z=sum_zt/attvect.size();
+//    uvitX_inertial.update(x,y,z);
+//    uvitX_inertial.normalize ();
+//    
+//    double cos_ra = cos(center_ra * M_PI/180);
+//    double sin_dec = sin(center_dec * M_PI/180);
+//    
+//   Axis ref(cos_ra,sin_dec,0);                                 //for twist angle computation
+//   // Axis ref(1,0,0);                                 //for twist angle computation
+//   LOG(INFO)<<"Reference  axes"<<endl;
+//   ref.display ();
+//    twist=(acos((ref.x*uvitX_inertial.x+ref.y*uvitX_inertial.y+ref.z*uvitX_inertial.z)/(uvitX_inertial.getMod()*ref.getMod()))) * 180/M_PI ;             //in degrees 
+//    if(uvitX_inertial.z<0) twist=360-twist;
+//    if(twist==NAN) {
+//             twist=0;
+//    }
+//    
+//    LOG(INFO)<<"Center RA : "<<center_ra;
+//    LOG(INFO)<<"Center DEC : "<<center_dec;
+//    LOG(INFO)<<"Twist: "<<twist<<"  deg";
+//    
+//    return (EXIT_SUCCESS);
+//}
+
+int uvtFullFrameAst::getHistory(vector<string> &vhistory) {
+    int cnt=0;
+    char *user = getlogin();
+    string str = "Module run by " + (string) user;
+    char *cdir = getcwd(NULL,PATH_MAX);
+    string rundir = "Run directory : " + (string) cdir;
+    vhistory.push_back(str);
+    vhistory.push_back(rundir);
+    vhistory.push_back("Parameter List START for " + (string) modulename);
+    vhistory.push_back((string)getSerialNo (cnt)+" inputdatadir=" + (string) inputdatadir);
+    vhistory.push_back((string)getSerialNo (cnt)+" caldbDir= " + (string) caldbDir);
+    vhistory.push_back((string)getSerialNo (cnt)+" catalogpath="+(string)catalogpath);
+    vhistory.push_back((string)getSerialNo (cnt)+" attitudefile="+(string)attitudefile);
+    vhistory.push_back((string)getSerialNo (cnt)+" outdir= " + (string) outdir);
+    vhistory.push_back((string)getSerialNo (cnt)+" Module Output directory=" + (string) moduleoutdir);
+    vhistory.push_back((string)getSerialNo (cnt)+" Time col in attitude file = " + (string) att_timecol);
+    vhistory.push_back((string)getSerialNo (cnt)+" Quaternion col in attitude file = " + (string) att_qcol);
+    if (clobber == YES)
+        vhistory.push_back((string)getSerialNo (cnt)+" clobber=yes");
+    else
+        vhistory.push_back((string)getSerialNo (cnt)+" clobber=no");
+    if (history == YES)
+        vhistory.push_back((string)getSerialNo (cnt)+" history=yes");
+    else
+        vhistory.push_back((string)getSerialNo (cnt)+" history=no");
+    vhistory.push_back("Parameter List END");
+    return (EXIT_SUCCESS);
+}
+
+int uvtFullFrameAst::readcatalogueFile() {
+    
+    return (EXIT_SUCCESS);
+}
+
+
+int uvtFullFrameAst::findStar_algo1 (float *inputArray ) //algorithm for finding the peaks
+{
+    float mean_Ofimage=0.0;
+     if (xsize == 0 || ysize == 0)
+    {
+        LOG(ERROR) << "***Divide by Zero***" << endl ;
+        return (EXIT_FAILURE) ;
+    }
+    Fx.clear () ;
+    Fy.clear () ;
+    Fval.clear () ;
+    Rx.clear () ;
+    Ry.clear () ;
+    Rval.clear () ;
+    Cx.clear () ;
+    Cy.clear () ;
+    Ci.clear () ;
+    int r , c ;
+     float *temp_array;
+     vector<float> array_temp;     
+     
+      if(datainfo.getModeFlag ()==PC)
+    {
+       array_temp.clear ();
+      for (int i=0;i<xsize*ysize;i++)
+      {
+        
+        if(inputArray[i]!=0.0f){
+            array_temp.push_back (inputArray[i]);
+            
+        }
+      }
+         temp_array  = new float[array_temp.size ()];
+           for (int in=0;in<array_temp.size ();in++)
+           {
+               temp_array[in]=array_temp[in];     
+             
+           }
+    }
+     
+    
+          
+label:
+    Fval.clear () ;
+    Fx.clear () ;
+    Fy.clear () ;
+    Rx.clear () ;
+    Ry.clear () ;
+    Rval.clear () ;
+   
+    
+
+    if (sd_mul_factor < 0)
+    {
+        LOG(ERROR) << "***SD_MULTI_FACTOR is <0***" << endl ;
+        return (EXIT_FAILURE) ;
+    }
+     double thr=0;
+     double sd_temp=0.0f;
+     
+   if(datainfo.getModeFlag ()==PC)
+    {
+       LOG(INFO)<<"INSIDE PC mode";
+        sd_temp=getSD (temp_array , array_temp.size ());
+  mean_Ofimage=getmean (temp_array,array_temp.size ());
+   thr =  sd_temp* sd_mul_factor ;
+     
+    }
+    else
+    {
+       
+         sd_temp=getSD (inputArray , xsize * ysize);
+  mean_Ofimage=getmean (inputArray,xsize*ysize);
+  thr =  sd_temp* sd_mul_factor ;
+    }
+    
+     
+  // sd_temp=getSD (inputArray , xsize * ysize);
+  // mean_Ofimage=getmean (inputArray,xsize*ysize);
+//    thr =  sd_temp* sd_mul_factor ;
+//   thr = mean_Ofimage+sd_temp* sd_mul_factor ;
+     thr=sd_temp* sd_mul_factor;
+   LOG(ERROR) << endl << "\nThreshold for first cut peaks is   " << mean_Ofimage<<" + "<<sd_temp<<" X "<<sd_mul_factor<<" = "<<thr ;
+   
+    //Stores those  pixels whose va;ues are higher than 'thr'.
+    for (int i = 0 ; i < xsize * ysize ; i++)
+    {
+        r = (i / xsize) ;
+        c = (i % xsize) ;
+
+        if (inputArray[i] > thr)
+        {
+            Fval.push_back (inputArray[i]) ;
+            Fx.push_back (c) ; //x is for column
+            Fy.push_back (r) ; //y is for row
+        }
+    }
+
+    LOG(INFO) << "SIGMA  Factor::" << sd_mul_factor << endl ;
+    LOG(INFO) << " Size of First cut Peaks  " << Fy.size () << endl ;
+
+    if (Fy.size () < minimum_No_of_Stars)
+    {
+        sd_mul_factor = sd_mul_factor - 0.25 ;
+        if (sd_mul_factor <= 0)
+        {
+            LOG(ERROR) << sd_mul_factor << " less than 0!!!! " << endl ;
+            return (EXIT_FAILURE) ;
+        }
+        goto label ;
+        //        LOG(INFO) << endl << "First cut peaks detected : " << Fy.size () << endl ;
+        //        LOG(INFO) << endl << "***No peaks found ***" << endl ;
+    }
+
+
+/*    for (int i = 0 ; i < xsize * ysize ; i++)
+       peakImage[i] = 0 ;
+    for (int i = 0 ; i < Fy.size () ; i++)
+        peakImage[Fy[i] * xsize + Fx[i]] = Fval[i] ;
+   */
+    
+
+            
+     //if winsize is even, make it odd
+   
+    if (refine_Winsize % 2 == 0)
+        refine_Winsize = refine_Winsize - 1 ;
+
+    LOG(INFO) << endl << "Using window size : " <<refine_Winsize << " for refining peaks " ;
+
+    //refined peaks
+    vector<int> Tx , Ty ;
+    vector<float> Tval ;
+
+    Tx = Fx ;
+    Ty = Fy ;
+    Tval = Fval ;
+
+ Star1 star1;
+ star_track.clear ();
+ for(int i=0;i<Tx.size ();i++)
+ {
+     star1.x=Tx[i];
+     star1.y=Ty[i];
+     star1.intensity=Tval[i];
+     star_track.push_back (star1);
+     
+ }
+ sort (star_track.begin (),star_track.end (),compare);
+    /*refining peaks logic
+    refined Window size is for the refined  peaks.
+   Refined peaks are found by  making window around each of the star(i.e first cut peaks)  and  finding brightest star among that window.*/
+    int start_r , end_r , start_c , end_c ;
+//to be removed 
+   Tx.clear ();Ty.clear ();Tval.clear ();
+  //  bool flag_unique=FALSE;
+   LOG(INFO)<<star_track.size ()<<endl;
+  // vector<Star> ::iterator itr =star_track.begin ();
+    for (int i = 0 ; i < star_track.size () ; i ++)
+    {
+        start_r = star_track[i].y - refine_Winsize / 2 ;
+        end_r = star_track[i].y + refine_Winsize / 2 ;
+        start_c = star_track[i].x- refine_Winsize / 2 ;
+        end_c = star_track[i].x + refine_Winsize / 2 ;
+           if (start_r < 0) start_r = 0 ;
+        if (end_r >= ysize) end_r = ysize - 1 ;
+        if (start_c < 0) start_c = 0 ;
+        if (end_c >= xsize) end_c = xsize - 1 ;
+         for(int fcpeak=i+1;fcpeak<star_track.size ();fcpeak++)
+         {
+             if(star_track[fcpeak].x>start_c && star_track[fcpeak].x<end_c && star_track[fcpeak].y>start_r && star_track[fcpeak].y<end_r)
+             {
+                 
+                 star_track.erase (star_track.begin ()+fcpeak);
+                 fcpeak--;
+             }
+          }
+        Tx.push_back (star_track[i].x);
+        Ty.push_back (star_track[i].y);
+        Tval.push_back (star_track[i].intensity);
+    }
+    
+   
+
+//till this
+    
+//    for (int i = 0 ; i < Fx.size () ; i++)
+//    {
+//        start_r = Ty[i] - refine_Winsize / 2 ;
+//        end_r = Ty[i] + refine_Winsize / 2 ;
+//        start_c = Tx[i] - refine_Winsize / 2 ;
+//        end_c = Tx[i] + refine_Winsize / 2 ;
+//        if (start_r < 0) start_r = 0 ;
+//        if (end_r >= ysize) end_r = ysize - 1 ;
+//        if (start_c < 0) start_c = 0 ;
+//        if (end_c >= xsize) end_c = xsize - 1 ;
+//        int max = 0 ;
+//        for (int k = start_r ; k <= end_r ; k++)
+//        {
+//            for (int l = start_c ; l <= end_c ; l++)
+//            {
+//
+//                if (inputArray[k * xsize + l] > max)
+//                {
+//                    max = inputArray[k * xsize + l] ;
+//                    Tx[i] = l ;
+//                    Ty[i] = k ;
+//                    Tval[i] = inputArray[k * xsize + l] ;
+//                } //  end of if block 
+//            } //end of l loop
+//        } //end of  k  loop
+//    } // end of i loop
+
+    /*--------------Refining peaks completed----------------*/
+
+    float *arr_refine = new float[xsize * ysize] ; //to store refined peaks
+    for (int i = 0 ; i < xsize * ysize ; i++)
+        arr_refine[i] = 0.0f ;
+
+  
+    for (int i = 0 ; i < Ty.size () ; i++)
+        arr_refine[Ty[i] * xsize + Tx[i]] = Tval[i] ; //overwriting the same place..
+    
+    Tx.clear () ;
+    Ty.clear () ;
+    Tval.clear () ;
+
+    for (int i = 0 ; i < xsize * ysize ; i++)
+    {
+        if (arr_refine[i] != 0)
+        {
+            Rx.push_back ((i % xsize)) ;
+            Ry.push_back ((i / xsize)) ;
+            Rval.push_back (arr_refine[i]) ;
+        }
+    }
+   
+    LOG(INFO) << "Number of final peaks is " << Rval.size () << endl ;
+
+
+    if (Ry.size () < minimum_No_of_Stars)
+    {
+        sd_mul_factor = sd_mul_factor - 0.25 ;
+        if (sd_mul_factor <= 0)
+        {
+            LOG(ERROR) << sd_mul_factor << " less than 0!!!! " << endl ;
+            return (EXIT_FAILURE) ;
+        }
+         delete[] arr_refine ;
+        goto label ;
+    }
+    /**method for  find Centroid within the Stars**/
+    doCentroiding (Rx , Ry , centroid_Winsize , inputArray , ysize , xsize) ;
+    delete[] arr_refine ;
+    return (EXIT_SUCCESS) ;
+}
+
+//method For doing Centroiding
+
+void uvtFullFrameAst::doCentroiding (vector<int> &X , vector<int> &Y , int centroidwindow , float *arr , int h , int w)
+{
+    Cx.clear () ;
+    Cy.clear () ;
+    Ci.clear () ;
+    double x_temp,y_temp,int_temp;
+    Star1 star1;
+    star_track.clear ();
+     
+    float x , y , val = 0 ;
+     //if centroidwindowsize  is even, make it odd
+    if (centroidwindow % 2 == 0)
+        centroidwindow = centroidwindow - 1 ;
+
+     LOG(INFO) << endl << "Using  window size : " <<centroidwindow<< " for finding Centroids " ;
+    double sum_x = 0 , sum_y = 0 , sum = 0 ;
+    /**Centroidwindow is  window size for the centroiding.
+    Centroid is  done by creating the window around each point of X and Y  vector and finding the centroid by adding the pixel intensity of 
+     *  each point of window. **/
+    
+    for (int i = 0 ; i < X.size () ; i++)
+    {
+        sum_x = 0 ;
+        sum_y = 0 , sum = 0 ;
+        for (int j = -1 * (centroidwindow / 2) ; j <= (centroidwindow / 2) ; j++)
+        {
+            for (int k = -1 * (centroidwindow / 2) ; k <= (centroidwindow / 2) ; k++)
+            {
+                x = X[i] ;
+                y = Y[i] ;
+                val = arr[(Y[i] + j) * w + (X[i] + k)] ;
+                sum_x = sum_x + (x + k) * val ;
+                sum_y = sum_y + (y + j) * val ;
+                sum = sum + val ;
+            }
+        }
+        
+        //if (sum <= 0)
+        if(sum==0)
+        {
+            LOG(ERROR) << endl << "Sum of intensities for (" << X[i] << " , " << Y[i] << ")  is <=0" << endl ;
+            LOG(ERROR) << endl << "\nDivide by zero error\n" ;
+            exit (EXIT_FAILURE) ;
+        }
+        /**Average value of x and y of the  Window is find out and put it in the CX,CY and Ci**/
+        x_temp= sum_x /  sum;
+        y_temp=(float) sum_y / (float) sum;
+        int_temp=(float) sum;
+        Cx.push_back (x_temp) ;
+        Cy.push_back (y_temp) ;
+        Ci.push_back (int_temp) ;
+        star1.x=x_temp;
+        star1.y=y_temp;
+        star1.intensity=int_temp;
+        star_track.push_back (star1);
+    }
+/**Sorting the list on the basis of the intensity**/
+   sort (star_track.begin (),star_track.end (),compare);
+    Cx.clear (),Cy.clear ();Ci.clear ();
+   
+    for (int i = 0 ; i < star_track.size () ; i++)
+    {
+        Cx.push_back (star_track[i].x);
+        Cy.push_back (star_track[i].y);
+        Ci.push_back (star_track[i].intensity);
+    }
+
+}
+int uvtFullFrameAst::convertToUVITAxes (float &x ,float  &y,double &new_x,double &new_y,double &new_z)
+{
+    //cout<<tan ((NUV_COEFF/IMG_DIM_DI*HOUR_MACRO)*M_PI/180)<<endl;exit(1);
+//    new_x=FOCAL_LENGTH*tan ((x-IMG_DIM_DI/2)*(PIX_PER_DEG_NUV*DEG_TO_RAD));
+//    new_y =FOCAL_LENGTH*tan ((y-IMG_DIM_DI/2)*(PIX_PER_DEG_NUV*DEG_TO_RAD));
+ double focal_length,detector_size;
+ if(strcmp(datainfo.getDetector (),"VIS")==0)
+ {
+ focal_length=4.4877;
+ detector_size=0.000025;
+     
+ }else if (strcmp(datainfo.getDetector (),"FUV")==0)
+ {
+ focal_length=4.6378;
+ detector_size=0.000025;
+ }
+ else if (strcmp(datainfo.getDetector (),"NUV")==0)
+ {
+  focal_length=4.647;
+ detector_size=0.000025;
+ }
+//  new_x=-1.0*(x-IMG_DIM_DI/2)*(sqrt(0.025)/(IMG_DIM_DI*100));
+//  new_y =-1.0*(y-IMG_DIM_DI/2)*(sqrt(0.025)/(IMG_DIM_DI*100));
+//  new_z=FOCAL_LENGTH;
+  new_x=-1.0*(x-2400)*detector_size/8;
+ new_y =-1.0*(y-2400)*detector_size/8;
+ new_z=focal_length;
+ //new_x=-1.0*(x-IMG_DIM_DI/2)*detector_size;
+ //new_y =-1.0*(y-IMG_DIM_DI/2)*detector_size;
+ //new_z=focal_length;
+  //cout<<x-IMG_DIM_DI/2<<" "<<new_x<<" "<<" "<<y-IMG_DIM_DI/2<<" "<<new_y<<" "<<new_z<<endl;
+return(EXIT_SUCCESS);
+}
+int uvtFullFrameAst::toNormalize (double &x, double &y, double &z,double &nor_x,double &nor_y,double &nor_z)
+{
+double rad=sqrt(x*x+y*y+z*z)    ;
+nor_x=x/rad;
+nor_y=y/rad;
+nor_z=z/rad;
+  //  cout<<"normalize::"<<nor_x<<" "<<nor_y<<" "<<nor_z<<endl;
+    return(EXIT_SUCCESS);
+}
+string uvtFullFrameAst::getRaDECmatch(vector<float> &RA_img_Stars,vector<float> &DEC_img_Stars,int search_algo_ctlg,string len_a,string len_b,string rad_search,int no_of_stars,
+        double &Abs_Val_DiffRA, double &Abs_Val_DiffDEC ,string nameFile,int *numStarsmatch,double decangle,bool flag_channel){
+    double ra_temp=0.0f,dec_temp=0.0f;
+    double ra_temp_currYear=0.0f,dec_temp_currYear=0.0f;
+    LOG(INFO)<<rad_search;
+    bool enough_points_found=FALSE;
+    vector<string> usno_CAT2;
+    vector<string> radeg_CAT2 ;
+    vector<string>dedeg_CAT2;
+    vector<string>bmag_CAT2;
+    vector<string> rmag_CAT2;
+    vector<string>epoch_CAT2;
+   vector<string>nuvmag ;
+    vector<string>errnuv;
+    vector<string> fuvmag;
+    vector<string> errfuv;
+    vector<string> nuvcounts;
+    vector<string> errcounts;
+    vector<double> Catalogue_stars_RA;
+    vector<double>Catalogue_stars_DEC;
+        vector<double> diff_RA;
+        vector<double> diff_DEC;
+    
+    char temp_ra[FLEN_FILENAME];
+   char temp_dec[FLEN_FILENAME];
+   double max_bmag=16;
+   double rad_temp=0.0f;
+   Database db;
+  db.openDatabase((string)databasename);
+   LOG(INFO)<<"came in";
+//  int counter_nummatches_found=0;
+  // bool flag_allCatalogue_checked=FALSE;
+   
+   //double diff_rmag_and_bmag;
+   //double umag_minus_rmag_val_for_currStar=-9999;
+   //double umag=-9999;
+  // vector<float> initial_catamatchRA,initial_catamatchDEC;
+  
+ ofstream file;
+ float diff_add_cata_ra,diff_add_cata_dec;
+    while(enough_points_found==FALSE)
+   {   
+       file.open(nameFile.c_str(),ios::out| ios::trunc);
+       file<<"RA_image"<<setw(20)<<"RA_catalogue"<<setw(20)<<"DEC_image"<<setw(20)<<"DEC_Catalogue"<<setw(20)<<"DIFF_RA"<<setw(20)<<"DIFF_DEC"<<endl;;
+       file<<"====================================================================================================================================="<<endl;  
+       
+        usno_CAT2.clear(), radeg_CAT2.clear(), dedeg_CAT2.clear(), bmag_CAT2.clear(), rmag_CAT2.clear(), epoch_CAT2.clear(), nuvmag.clear(), errnuv.clear(), fuvmag.clear(), errfuv.clear(), nuvcounts.clear(), errcounts.clear();
+        Catalogue_stars_RA.clear(), Catalogue_stars_DEC.clear();
+        diff_RA.clear(), diff_DEC.clear();
+        track_raback.clear();
+        track_decback.clear();
+        validStar_index_filtered.clear();
+        valid_Star_index.clear();
+        //LOG(INFO)<<no_of_stars;
+        for (int i = 0; i < no_of_stars; i++) 
+        {
+                    usno_CAT2.clear(), radeg_CAT2.clear(), dedeg_CAT2.clear(), bmag_CAT2.clear(),
+                    rmag_CAT2.clear(), epoch_CAT2.clear(), nuvmag.clear(), errnuv.clear(), fuvmag.clear(),
+                    errfuv.clear(), nuvcounts.clear(), errcounts.clear();
+            max_bmag = 16;
+            ra_temp = -9999;
+            dec_temp = -9999;
+            sprintf(temp_ra, " %f", RA_img_Stars[i]);
+            sprintf(temp_dec, " %f", DEC_img_Stars[i]);
+          //  LOG(INFO)<<temp_ra<<" "<<temp_dec;
+            db.select(usno_CAT2, radeg_CAT2, dedeg_CAT2, bmag_CAT2, rmag_CAT2, epoch_CAT2, (string) temp_ra, (string) temp_dec, nuvmag, errnuv, fuvmag, errfuv, nuvcounts, errcounts, search_algo_ctlg, len_a, len_b, rad_search,decangle);
+           
+            if(flag_channel==1){
+                bmag_CAT2=nuvmag;
+            }
+           // LOG(INFO)<<bmag_CAT2.size()<<" "<<nuvmag.size();
+            for (int j = 0; j < bmag_CAT2.size(); j++) 
+            {
+                
+                if (atof(bmag_CAT2[j].c_str()) < max_bmag) 
+             
+                {
+                    diff_add_cata_dec=0.0f;
+                    diff_add_cata_ra=0.0f;
+                    ra_temp = atof(radeg_CAT2[j].c_str());
+                    dec_temp = atof(dedeg_CAT2[j].c_str());
+                    Convert_J2000_To_ObervationRADECVal(dayRefMJD,ra_temp,dec_temp,diff_add_cata_ra,diff_add_cata_dec);
+                    ra_temp_currYear=ra_temp+diff_add_cata_ra*(dayRefMJD);
+                    dec_temp_currYear=dec_temp+diff_add_cata_dec*(dayRefMJD);
+                 
+                    for(int i=0;i<Catalogue_stars_RA.size();i++)
+                    {
+                    if(ra_temp==Catalogue_stars_RA[i] && dec_temp==Catalogue_stars_DEC[i])
+                    {
+                        ra_temp=-9999;dec_temp=-9999;                              
+                        break;    
+                    }
+                    }
+                    max_bmag = atof(bmag_CAT2[j].c_str());
+                 
+                }
+            }
+            
+
+             if(ra_temp!=-9999 && dec_temp!=-9999)
+             {
+                 
+//                file<<temp_ra<<setw(20)<<setprecision(10)<<ra_temp <<setw(20)<<setprecision(10)<< temp_dec<<setw(20)<<dec_temp<<setw(20)<<(ra_temp-RA_img_Stars[i])*decangle<<setw(20)<<dec_temp-DEC_img_Stars[i]<<endl;
+                file<<temp_ra<<setw(20)<<setprecision(10)<<ra_temp <<setw(20)<<setprecision(10)<< temp_dec<<setw(20)<<dec_temp<<setw(20)<<(ra_temp-RA_img_Stars[i])*decangle<<setw(20)<<dec_temp-DEC_img_Stars[i]<<endl;
+                 //counter_nummatches_found++;    
+             }
+            //LOG(INFO)<<temp_ra<<setprecision(20)<<ra_temp <<setprecision(20)<< temp_dec<<setprecision(20)<<dec_temp<<setprecision(20)<<ra_temp-RA_img_Stars[i]<<setprecision(20)<<dec_temp-DEC_img_Stars[i];
+            track_raback.push_back(ra_temp_currYear);
+            track_decback.push_back(dec_temp_currYear);
+            Catalogue_stars_RA.push_back(ra_temp);
+            Catalogue_stars_DEC.push_back(dec_temp);
+
+        }
+        
+        
+   
+       for (int k=0;k<Catalogue_stars_RA.size ();k++)      
+        {
+           if(Catalogue_stars_RA[k]!=-9999  && Catalogue_stars_DEC[k]!=-9999)
+           {
+               valid_Star_index.push_back(k);              
+               diff_RA.push_back ((Catalogue_stars_RA[k]-RA_img_Stars[k])*decangle);//multily by cos DEC_PNT
+               diff_DEC.push_back (Catalogue_stars_DEC[k]-DEC_img_Stars[k]);     
+//             diff_RA.push_back ((RA_img_Stars[k]-Catalogue_stars_RA[k])*decangle);//multily by cos DEC_PNT
+//             diff_DEC.push_back (DEC_img_Stars[k]-Catalogue_stars_DEC[k]);     
+       }
+//           else{
+//               Diff_Ra_initial_index.push_back(-9999);
+//               Diff_Dec_initial_index.push_back(-9999);
+//           }
+       
+       }
+        //LOG(INFO)<<"The mean is "<<getmean(diff_RA.data(),diff_RA.size())<<" "<<getmean(diff_DEC.data(),diff_DEC.size())<<" "<<getSD(diff_RA.data(),diff_RA.size())<<" "<<getSD(diff_DEC.data(),diff_DEC.size());
+        double *temp_Array_RA = new double[diff_RA.size()];
+        double *temp_Array_DEC = new double[diff_RA.size()];
+        vector<double> diffRAbackup =diff_RA;
+        if(diff_RA.size()>0){
+       int status=getNearByValues(diff_RA.data(),temp_Array_RA,diff_RA.size(),0.00138888);
+        if(status)
+        {
+        LOG(ERROR)<<"Error in finding the near by values for RA";
+        exit(1);
+        }
+     
+      status=getNearByValues(diff_DEC.data(),temp_Array_DEC,diff_DEC.size(),0.00138888);
+        if(status)
+        {
+        LOG(ERROR)<<"Error in finding the near by values for DEC";
+        exit(1);
+        }
+//      file.close();
+//      exit(1);
+     
+        vector<double > diffRA_matched,diffDEC_matched;
+        for (int i=0;i<diff_RA.size();i++)
+        {
+            if(temp_Array_RA[i]==1 && temp_Array_DEC[i]==1){
+               
+                diffRA_matched.push_back(diff_RA[i]);
+                diffDEC_matched.push_back(diff_DEC[i]);
+                validStar_index_filtered.push_back(valid_Star_index[i]);
+            }
+//            else{
+//                track_raback.push_back(-9999);
+//                track_decback.push_back(-9999);
+//            }
+            
+        }
+      
+        diff_RA.clear();
+        diff_DEC.clear();
+        diff_RA=diffRA_matched;
+        diff_DEC=diffDEC_matched;
+        
+        
+        *numStarsmatch=diff_RA.size();
+        
+        //LOG(INFO)<<"555 "<<diff_RA.size();
+        }
+        if(diff_RA.size()>=2)            
+        {
+           
+           enough_points_found=TRUE;
+        }
+        else 
+        {
+       rad_temp=atof(rad_search.c_str ());
+       rad_temp=rad_temp*1.2;
+       sprintf((char*)rad_search.c_str (),"%f",rad_temp);
+       if(rad_temp>1.2){
+           LOG(ERROR)<<"***Search radius become greater than 3 arc-min***";
+           break;
+       }
+       file.close();
+        
+       }
+ 
+        
+   }
+   //added
+   
+   if(enough_points_found==FALSE)
+   {
+       LOG(INFO)<<"Error in getting points for RA and DEC matching";
+       flag_NOT_FOUND_CATA_MATCH=1;
+   }
+   else{
+   //till this
+      
+       float ra_max=0;
+       float dec_max=0;
+       float Diff_raval=0;
+       for (int i=0;i<diff_DEC.size();i++)
+       {
+        if(ra_max<abs(diff_RA[i])){
+            ra_max=abs(diff_RA[i]);
+        }
+        if(dec_max<abs(diff_DEC[i]))
+        {
+            dec_max=abs(diff_DEC[i]);
+        }
+      
+        
+        
+       }
+ 
+       Abs_Val_DiffRA=ra_max;//change name of variable that implies diffrence
+      Abs_Val_DiffDEC=dec_max;// ||
+           // Abs_Val_DiffRA=diff_RA[0];//change name of variable that implies diffrence
+     // Abs_Val_DiffDEC=diff_DEC[0];// ||
+      
+   //LOG(INFO)<<Abs_Val_DiffRA<<" "<<Abs_Val_DiffDEC;
+   double new_searchRadius=sqrt(Abs_Val_DiffRA*Abs_Val_DiffRA+Abs_Val_DiffDEC*Abs_Val_DiffDEC);//*1.2;
+//   LOG(INFO)<<new_searchRadius;
+   
+   
+   Abs_Val_DiffRA=getmean(diff_RA.data(),diff_RA.size());
+   Abs_Val_DiffDEC=getmean(diff_DEC.data(),diff_DEC.size());
+  // LOG(INFO)<<Abs_Val_DiffDEC;
+       file<<"====================================================================="<<endl;
+       file<<"Abs max DIFF_RA value "<<Abs_Val_DiffRA<<endl;
+       file<<"Abs max DIFF_DEC value "<<Abs_Val_DiffDEC<<endl;
+  
+   rad_search=convertFloatToStr(new_searchRadius);
+
+   }
+  file.close();
+   return rad_search;
+    
+}
+
+int uvtFullFrameAst::calculateShiftsAndRoll( int totalelements,vector<double> &Xone,vector<double> &Yone,vector<double> &Xtwo,vector<double> &Ytwo,int xsize,int ysize,double &Xdx,double  &Ydy,double &Theta)
+{
+     spMatrix B ((totalelements) * 2 , 1) ;
+        spMatrix A ((totalelements) * 2 , 3) ;
+        spMatrix X (3 , 1) ;
+        int temp = 0 ;
+
+        for (int t = 0 ; t < totalelements * 2 ; t = t + 2)
+        {
+            B (t , 0) = (Xtwo[temp]/8 - Xone[temp]/8) ; //+IMAGE_ARRAYSIZE*0.5;
+            B (t + 1 , 0) = (Ytwo[temp]/8 - Yone[temp]/8) ; //+IMAGE_ARRAYSIZE*0.5;
+
+            A (t , 0) = - 1.0 * (Yone[temp]/8 - 300) ;
+            A (t , 1) = 1 ;
+            A (t , 2) = 0 ;
+
+            A (t + 1 , 0) = (Xone[temp]/8 - 300) ;
+            A (t + 1 , 1) = 0 ;
+            A (t + 1 , 2) = 1 ;
+
+            temp ++ ;
+        }
+
+        X.ApplyLeastSquare (A , B) ;
+
+        Xdx = X (1 , 0) ;
+        Ydy = X (2 , 0) ;
+        Theta = X (0 , 0)*180/M_PI ;
+        return (EXIT_SUCCESS);
+}
+
+

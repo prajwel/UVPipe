@@ -1,0 +1,30 @@
+15-01-2019
+==========
+
+Changes committed to parent CALDB_L2_ver2.1/DISTORTION/DETECTOR/
+
+NUV calibfile modified
+FUV calibfile modified
+
+Changes committed to parent CALDB_L2_ver2.1/FLAT_FIELDS_FILTER/FUV/PC/
+
+F0 calibfile modified (to FUVALL)
+F1 calibfile modified (to FUVALL)
+F2 calibfile modified (to FUVALL)
+F3 calibfile modified (to FUVALL)
+F4 calibfile modified (to FUVALL)
+F5 calibfile modified (to FUVALL)
+F6 calibfile modified (to FUVALL)
+F7 calibfile modified (to FUVALL)
+
+
+Changes committed to parent CALDB_L2_ver2.1/FLAT_FIELDS_FILTER/NUV/PC/
+
+F0 calibfile modified (to N242W)
+F1 calibfile modified (to N242W)
+F2 calibfile modified (to N219M)
+F3 calibfile modified (to N245M)
+F4 calibfile modified (to N242W)
+F5 calibfile modified (to N263M)
+F6 calibfile modified (to N279N)
+F7 calibfile modified (to N242W)

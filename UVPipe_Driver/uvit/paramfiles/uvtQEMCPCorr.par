@@ -1,0 +1,8 @@
+inputdatadir,f,a,"uvtFlatFieldCorr_1.0",,,"Input directory path"
+caldbDir,f,a,"/raid-data1/data/astrowrk/uvit/UVIT_chain_28march/UVIT_VERSION_0.2/CALD_IIA_15sep15",,,"CALDB directory path"
+lbtfile,f,a,"/raid-data1/data/astrowrk/uvit/UVIT_chain_28march/UVIT_VERSION_0.2/20150827_P01_001T01_0000000001_level1/uvit/ORBNO/aux/aux2/AS1A06_303T26_0000000069uvt_level1.lbt",,,"Enter the path of  lbtfile"
+operatingmode,s,a,"IM",,,"Enter operating mode for instrument (im/pc/IM/PC):"
+outdir,f,a,".",,,"Output directory path"
+clobber,b,a,y,,,"Overwrite output (y/n)"
+history,b,a,n,,,"Write history (y/n)"
+mode,s,h,"ql",,,""

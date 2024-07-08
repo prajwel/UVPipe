@@ -1,0 +1,8 @@
+inputdatadir,f,a,"DataIngest_1.0",,,"Input directory path"
+outdir,f,a,".",,,"Output directory path"
+darkframe_flag,b,a,n,,,"Dark Subtraction to be done or not(y/n)"
+dark_startpath,f,a,"/raid-data1/data/astrowrk/uvit/UVIT_preeti/testing/temp_diffData/DataIngest_1.0/SignalFrames/AS179uvtNIIIM00F0_l2_t1472.8544_f2_di.fits",,,"Path for start Dark Frame"
+dark_endpath,f,a,"/raid-data1/data/astrowrk/uvit/UVIT_preeti/testing/temp_diffData/DataIngest_1.0/SignalFrames/AS179uvtNIIIM00F0_l2_t1513.6670_f1174_di.fits",,,"Path for End Dark Frame"
+clobber,b,a,y,,,"Overwrite output(y/n)"
+history,b,a,n,,,"Write history(y/n)"
+mode,s,h,"ql",,,""

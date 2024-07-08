@@ -1,0 +1,7 @@
+inputdatadir,f,a,"uvtOpticAssDistCorr_1.0",,,"Input directory path"
+outdir,f,a,".",,,"Output directory path"
+averageFactor,i,a,1,,,"Value of Average Factor"
+framesToBeDiscard,i,a,2,,,"Number of frames to be Discarded"
+clobber,b,a,y,,,"Overwrite output(y/n)"
+history,b,a,n,,,"Write history(y/n) :"
+mode,s,h,"ql",,,""

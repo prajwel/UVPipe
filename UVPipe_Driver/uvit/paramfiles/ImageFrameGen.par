@@ -1,0 +1,28 @@
+level1indir,f,ql,"LEVL1AS1UVT20151204P01_998T02_9000000190_01070.tar_V1.0.gz",,,"Enter level directory path"
+caldbdir,f,ql,"CALD_IIA_23sep15",,,"Enter caldb directory path"
+level2outdir,f,ql,"ImageFrame_ouytput_FUV",,,"Enter level2 directory"
+channel,s,ql,"FUV",,,"Channel (NUV/FUV/VIS)"
+GTI_FLAG,b,a,n,,,"GTI filtering to be done or not(y/n)"
+
+parityFlag,i,a,4,,,"Parity check[1 for All three words]/[2 for only X,Y]/[3 for only x]/[4 for only y]"
+history,b,ql,n,,,"History [y/n] :"
+clobber,b,ql,y,,,"Clobber[y/n] :"
+
+
+#DataIngest
+darkframe_flag,i,a,0,,,"Dark Subtraction to be done or not"
+dropframe,b,a,n,,,"Enter y for drop frame, n for drop packet [y/n]"
+
+Write_todiskac,i,a,1,,,"Want To Write output of AccEveryTsec to Disk?[1 for yes/o for No]"
+Write_todiskfi,i,a,1,,,"Want To Write output of Frameintegration to Disk?[1 for yes/o for No]"
+
+framesDiscard,i,ql,0,,,"Enter the number of frames to discard"
+framesCompute,i,ql,500,,,"Enter the number of frames to compute"
+frameintegrateDim,i,a,600,,,"Enter frame integration output size [Must be Integer]"
+
+
+#uvtAccEveryTsec
+Nacc,i,a,5,,,"Number of frames to accumulate [Must be Integer]"
+
+#uvt_im_ra
+mode,s,h,"ql",,,"Mode"

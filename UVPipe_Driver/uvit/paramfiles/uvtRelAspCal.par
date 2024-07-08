@@ -1,0 +1,8 @@
+framelistDir,f,a,"/raid-data1/data/astrowrk/uvit/Dhruv/Data_Test/uvtFindStarCentroid_1.0/",,,"Enter the path of Input Directory"
+outdir,f,a,".",,,"Enter the absolute path of output directory"
+drift_dir,f,a,"uvtComputeDrift_0.3",,,"Path for input Drift file"
+jitter_dir,f,a,"uvtComputeJitter_0.3",,,"Path for Jitter directory"
+thermal_dir,f,a,"uvtComputeThermal_0.3",,,"Path for thermal directory"
+clobber,b,a,y,,,"Overwrite output[y/n]"
+history,b,a,n,,,"Write history[y/n] :"
+mode,s,h,"ql",,,"Enter mode"
