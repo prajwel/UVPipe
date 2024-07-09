@@ -603,7 +603,7 @@ def get_caldb_version(
     with open(driver_module_param_file, "r") as file:
         lines = file.readlines()
         CALDB_line = lines[8]
-        CALDB_suffix = CALDB_line.split("/")[3]
+        CALDB_suffix = CALDB_line.split("/")[-2]
         CALDB_version = CALDB_suffix.split("CALDB_L2_v")[1]
         if CALDB_version not in allowed_CALDB_versions:
             raise ValueError(f"Incorrect CALDB version = {CALDB_version}")
