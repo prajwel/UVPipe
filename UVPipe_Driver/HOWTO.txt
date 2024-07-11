@@ -1,4 +1,9 @@
-# Follow these steps to build and run a container image using Podman:
+How to run the UVPipe C++ scripts
+---------------------------------
+
+# Keep the Level1 dataset in a working area.
+# For example, assume that the working area is /home/prajwel/where_Level1_data_is_kept/.
+# Follow the below steps to build and run the container image using Podman.
 
 #1. Navigate to the UVPipe_Driver directory and specify a temporary directory (TMPDIR). For example:
 export TMPDIR=/home/prajwel/podman_tmp
@@ -6,10 +11,13 @@ export TMPDIR=/home/prajwel/podman_tmp
 #2. Build the container image using the following command:
 podman build -t uvpipe_driver .
 
-#3. Run the uvpipe_driver container with the following command:
-podman run --rm -it -v /home/prajwel/where_Level1_data_is_kept:/app/work_area:Z uvpipe_driver 
+#3. Keep the appropriate UVIT_DriverModule.par file alongside the Level1 dataset at /home/prajwel/where_Level1_data_is_kept/.
+# Commonly used variations of the UVIT_DriverModule.par file can be found at UVPipe_Driver/Driver_module_param_files.
 
-#Note: Replace /home/prajwel/where_Level1_data_is_kept with the directory path where the Level 1 dataset is stored.
+#4. Run the uvpipe_driver container with the following command:
+podman run --rm -it -v /home/prajwel/where_Level1_data_is_kept:/app/work_area:Z uvpipe_driver
 
-#NOTE To reset the Podman environment and clean up all builds, use the following command:
+# Note 1: To reset the Podman environment and clean up all builds, use the following command:
 podman system reset
+
+# Note 2: Unless you make any changes to the contents of the UVPipe_Driver directory, steps 1 and 2 needs to be executed only once. The image, once built, will be available until it is removed.
