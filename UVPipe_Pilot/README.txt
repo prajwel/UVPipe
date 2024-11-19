@@ -1,10 +1,10 @@
 
-Astrosat/UVIT Level2 data products (README version: 1.0.0)
+Astrosat/UVIT Level2 data products (README version: 1.0.1)
 ==========================================================
 
 Maintained by UVIT Payload Operations Center (UVIT POC), IIA
 Email: uvit.atc@iiap.res.in
-Website: http://uvit.iiap.res.in/
+Website: https://www.iiap.res.in/projects/uvit/
 
 
 CONTENTS
