@@ -8,6 +8,7 @@ import astroalign as aa
 from glob import glob
 from astropy.io import fits
 from astropy.stats import SigmaClip
+from astropy.convolution import convolve
 from astropy.utils.exceptions import AstropyWarning
 from photutils.detection import DAOStarFinder
 from photutils.aperture import CircularAperture
@@ -16,6 +17,7 @@ from joblib import Parallel, delayed
 from skimage import transform
 from aafitrans import find_transform, MaxIterError
 from itertools import compress
+from scipy.spatial import KDTree
 
 
 def get_framedata(file):
@@ -68,6 +70,12 @@ def detect_sources(data, threshold):
     mask = mask.to_image(shape=((1800, 1800)))
     data[~mask.astype(bool)] = np.nan
 
+    high_value_mask = data > 50000
+    box_kernel = np.ones((15, 15))
+    high_value_mask = convolve(high_value_mask, box_kernel, normalize_kernel=False)
+    high_value_mask = high_value_mask > 0
+    data[high_value_mask] = np.nan
+
     sigma_clip = SigmaClip(sigma=3.0)
     bkg_estimator = MedianBackground()
     bkg = Background2D(
@@ -94,6 +102,16 @@ def detect_sources(data, threshold):
     return uA
 
 
+def remove_close_pairs(detections, distance):
+    tree = KDTree(detections)
+    pairs = tree.query_pairs(r=distance)
+    close_sources = np.unique(list(pairs))
+    if len(close_sources) > 0:
+        # print(f'Removed {len(close_sources)} sources.')
+        detections = np.delete(detections, close_sources, axis=0)
+    return detections
+
+
 def VIS_detect_sources_in_range(
     VIS_images, minimum_detections=30, maximum_detections=50
 ):
@@ -107,12 +125,14 @@ def VIS_detect_sources_in_range(
         threshold = original_threshold
         while len(uA) <= minimum_detections:
             uA = detect_sources(hdu[0].data, threshold)
+            uA = remove_close_pairs(uA, 5 / 1.13)
             threshold = threshold - (threshold / 3)
             if threshold <= 1:
                 print("If you see this, please contact developer.")
                 sys.exit()
         while len(uA) > maximum_detections:
             uA = detect_sources(hdu[0].data, threshold)
+            uA = remove_close_pairs(uA, 5 / 1.13)
             threshold = 2 * threshold
             if threshold >= 1e20:
                 print("If you see this, please contact developer.")
