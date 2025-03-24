@@ -34,9 +34,55 @@ UVPipe requires Python version 3.9 or above. The required Python packages can be
 * Astrometry.net
 * Podman
 
-# UVPipe setup
+# UVPipe Setup
 
-Ensure that all the required dependencies listed above are installed.   Once done, download the UVPipe source code from the [UVPipe GitHub Repository](https://github.com/prajwel/UVPipe)
+Ensure that all the required dependencies listed above are installed. Next, download the UVPipe source code from the [UVPipe GitHub Repository](https://github.com/prajwel/UVPipe).
 
-To download the latest version of UVPipe, use the following link:
-📥 **[Download UVPipe (Latest Version)](https://github.com/prajwel/UVPipe/archive/refs/heads/main.zip)**
+To download the latest version, use the following link:  
+📥 [Download UVPipe (Latest Version)](https://github.com/prajwel/UVPipe/archive/refs/heads/main.zip).
+
+### Extracting the Files
+Unzip the downloaded file. This will create a directory named `UVPipe-main`, which has the following structure:
+
+```bash
+UVPipe-main
+├── HOWTO.txt
+├── LICENSE.txt
+├── README.md
+├── UVPipe_Driver/
+└── UVPipe_Pilot/
+```
+
+- `UVPipe_Driver/` → Contains the C++ scripts, which should be run **first**.
+- `UVPipe_Pilot/` → Contains the Python scripts, which should be run **after** the C++ scripts.
+
+### How to run the UVPipe C++ scripts
+
+> **IMPORTANT:** The UVPipe C++ scripts are executed within a container using Podman.
+
+Ensure that the Level1 dataset is placed in a working directory. For example, assume the working directory is: `/home/prajwel/where_Level1_data_is_kept/`. Follow the below steps to build and run the container image using Podman.
+
+1. Open a terminal and navigate to the `UVPipe_Driver` directory. Then, set a temporary directory (TMPDIR). For example:
+``` bash
+export TMPDIR=/home/prajwel/podman_tmp
+```
+
+2. Build the container image using the following command:
+``` bash
+podman build -t uvpipe_driver .
+```
+
+3. Keep the appropriate `UVIT_DriverModule.par` file alongside the Level1 dataset at `/home/prajwel/where_Level1_data_is_kept/`. Commonly used variations of the `UVIT_DriverModule.par` file can be found at `UVPipe_Driver/Driver_module_param_files`.
+
+4. Run the `uvpipe_driver` container with the following command:
+``` bash
+podman run --rm -it -v /home/prajwel/where_Level1_data_is_kept:/app/work_area:Z uvpipe_driver
+```
+
+> Note 1: To reset the Podman environment and clean up all builds, use the following command:
+``` bash
+podman system reset
+```
+
+> Note 2: Unless you make any changes to the contents of the `UVPipe_Driver` directory, steps 1 and 2 needs to be executed only once. The image, once built, will be available until it is removed.
+
