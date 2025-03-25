@@ -79,12 +79,12 @@ podman build -t uvpipe_driver .
 podman run --rm -it -v /home/prajwel/where_Level1_data_is_kept:/app/work_area:Z uvpipe_driver
 ```
 
-> Note 1: To reset the Podman environment and clean up all builds, use the following command:
+> Note 1: Unless you make any changes to the contents of the `UVPipe_Driver` directory, steps 1 and 2 needs to be executed only once. The image, once built, will be available until it is removed.
+
+> Note 2: To reset the Podman environment and clean up all builds, use the following command:
 > ``` bash
 > podman system reset
 > ```
-
-> Note 2: Unless you make any changes to the contents of the `UVPipe_Driver` directory, steps 1 and 2 needs to be executed only once. The image, once built, will be available until it is removed.
 
 ### How to run the UVPipe Python scripts
 
@@ -105,6 +105,6 @@ Follow the steps below to set up and execute the Python scripts:
 
 3. Run the UVPipe Python Scripts
     - Navigate to the working directory and execute the following command:
-  ```bash
-  ./UVIT_pilot.sh
-  ```
+      ``` bash
+      ./UVIT_pilot.sh
+      ```
