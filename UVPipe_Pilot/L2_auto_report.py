@@ -3,15 +3,8 @@
 
 import os
 import numpy as np
-from sys import version
 from astropy.io import fits
-
-if version[0] == "2":
-    from itertools import izip_longest
-
-    zip_longest = izip_longest
-else:
-    from itertools import zip_longest
+from itertools import zip_longest
 
 
 # Window Vs Frame rate dictionary.
