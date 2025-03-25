@@ -332,9 +332,7 @@ class correlate_events_lists:
         smoothed_reference_image = smoothed_reference_image - (
             bg_reference * bin_size**2
         )
-        smoothed_to_match_image = smoothed_to_match_image - (
-            bg_to_match * bin_size**2
-        )
+        smoothed_to_match_image = smoothed_to_match_image - (bg_to_match * bin_size**2)
 
         smoothed_reference_image = smoothed_reference_image / np.std(
             smoothed_reference_image
