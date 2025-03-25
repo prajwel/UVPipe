@@ -102,3 +102,5 @@ python find_bad_combined_events_lists_using_curvit.py >> $postcombining 2>&1
 cat $precombining $postcombining > combining.log
 
 rm -rf output
+
+python make_L2ICD_defined_products.py
