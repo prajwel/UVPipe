@@ -34,6 +34,14 @@ UVPipe requires Python version 3.9 or above. The required Python packages can be
 * Astrometry.net
 * Podman
 
+## Level1 dataset
+
+UVPipe will exclusively run on Level1 files in gzipped tarball format. If the Level1 dataset is in ZIP format, first convert it to gzipped tarball format using the `Level1_zip_to_gzipped_tarball.sh` script (found inside the `misc/` directory). For example:
+
+``` bash
+bash Level1_zip_to_gzipped_tarball.sh LEVL1AS1UVT20160322T01_051T01_9000000390_02613.zip
+```
+
 # UVPipe setup
 
 Ensure that all the required dependencies listed above are installed. Next, download the UVPipe source code from the [UVPipe GitHub Repository](https://github.com/prajwel/UVPipe).
@@ -46,8 +54,8 @@ Unzip the downloaded file. This will create a directory named `UVPipe-main`, whi
 
 ```bash
 UVPipe-main
-├── HOWTO.txt
 ├── LICENSE.txt
+├── misc/
 ├── README.md
 ├── UVPipe_Driver/
 └── UVPipe_Pilot/
@@ -55,6 +63,7 @@ UVPipe-main
 
 - `UVPipe_Driver/` → Contains the C++ scripts, which should be run **first**.
 - `UVPipe_Pilot/` → Contains the Python scripts, which should be run **after** the C++ scripts.
+- `misc/` → Contains miscellaneous useful scripts.
 
 ### How to run the UVPipe C++ scripts
 
@@ -106,5 +115,5 @@ Follow the steps below to set up and execute the Python scripts:
 3. Run the UVPipe Python Scripts
     - Navigate to the working directory and execute the following command:
       ``` bash
-      ./UVIT_pilot.sh
+      bash UVIT_pilot.sh
       ```
