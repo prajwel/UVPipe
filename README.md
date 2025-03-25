@@ -1,5 +1,11 @@
+# **UVPipe**
+> UVIT Level2 pipeline
 
-# Introduction
+<p align="center">
+<img src="https://i.imgur.com/9Zez5eV.png" width="400"/>
+</p>
+
+## Introduction
 
 The Ultraviolet Imaging Telescope (UVIT) is one of the five payloads onboard the AstroSat space observatory.
 This document provides instructions on how to run the UVIT Level2 pipeline (hereafter referred to as UVPipe) on an input UVIT Level1 dataset.  UVPipe is developed in C++ and Python at the UVIT Payload Operations Centre (POC).
@@ -7,11 +13,11 @@ This document provides instructions on how to run the UVIT Level2 pipeline (here
 Please note that the UVIT POC will process all UVIT Level1 datasets using the UVPipe version available at the time. The processed Level2 datasets will be available in the AstroSat Archive.
 > **IMPORTANT:** UVPipe was developed for execution at the UVIT POC. If you are running it independently, please verify the obtained results. Report any errors or failures to the UVIT POC.
 
-# Requirements
+## Requirements
 
 UVPipe has been tested exclusively on GNU/Linux operating systems. It requires a minimum of 64 GB of random-access memory (RAM). Storage requirements vary based on the size of the Level1 dataset.
 
-## Required Python packages
+### Required Python packages
 
 UVPipe requires Python version 3.9 or above. The required Python packages can be installed using `pip`. For example: ```pip install aafitrans```. All required Python packages are listed below.
 * Aafitrans
@@ -29,12 +35,12 @@ UVPipe requires Python version 3.9 or above. The required Python packages can be
 * Scikit-image
 * XlsxWriter
 
-## Other software requirements
+### Other software requirements
 
 * Astrometry.net
 * Podman
 
-# Level1 dataset format
+## Level1 dataset format
 
 UVPipe will exclusively run on Level1 files in gzipped tarball format. If the Level1 dataset is in ZIP format, first convert it to gzipped tarball format using the `Level1_zip_to_gzipped_tarball.sh` script (found inside the `misc/` directory). For example:
 
@@ -42,7 +48,7 @@ UVPipe will exclusively run on Level1 files in gzipped tarball format. If the Le
 bash Level1_zip_to_gzipped_tarball.sh LEVL1AS1UVT20160322T01_051T01_9000000390_02613.zip
 ```
 
-# UVPipe setup and run
+## UVPipe setup and run
 
 Ensure that all the required dependencies listed above are installed. Next, download the UVPipe source code from the [UVPipe GitHub Repository](https://github.com/prajwel/UVPipe).
 
@@ -127,7 +133,7 @@ Follow the steps below to set up and execute the Python scripts:
       bash UVIT_pilot.sh
       ```
 
-# Checking the UVPipe run
+## Checking the UVPipe run
 
 UVPipe includes multiple built-in checks at various stages of execution. However, users should primarily focus on the following key checks:
 
