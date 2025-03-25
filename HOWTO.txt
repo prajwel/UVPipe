@@ -1,4 +1,0 @@
-# The pipeline consists of scripts written in C++ and Python.
-# The C++ scripts can be found inside the UVPipe_Driver directory. These should be run first.
-# The Python scripts can be found inside the UVPipe_Pilot directory.
-# To run the pipeline, first follow the instructions provided in UVPipe_Driver/HOWTO.txt, then proceed with the instructions in UVPipe_Pilot/HOWTO.txt.
