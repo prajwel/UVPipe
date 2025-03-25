@@ -112,6 +112,8 @@ Follow the steps below to set up and execute the Python scripts:
         # In which directories should we search for indices?
         add_path /home/prajwel/UVIT_astrometry/GAIA_epoch_2000_index_files_for_UVIT_astrometry
         add_path /home/prajwel/UVIT_astrometry/5200
+        add_path /home/prajwel/UVIT_astrometry/6100
+        add_path /home/prajwel/UVIT_astrometry/6000
         ...
         ```
 
@@ -124,3 +126,17 @@ Follow the steps below to set up and execute the Python scripts:
       ``` bash
       bash UVIT_pilot.sh
       ```
+
+# Checking the UVPipe run
+
+UVPipe includes multiple built-in checks at various stages of execution. However, users should primarily focus on the following key checks:
+
+1. **`combining.log`**
+   - This file is generated after each run. Open it and check for any failures or errors.
+   - In the final sections of the `combining.log` file, `R` values are listed for two bright sources for each channel-filter-window combination.
+   - Ideally, the `R` value should be less than 0.3.
+   - Refer to `UVPipe_Pilot/README.txt` for further details.
+
+2. **`_animation.gif` Files**
+   - Two `_animation.gif` files will be generated, corresponding to two bright sources for each channel-filter-window combination.
+   - Verify that the source centre consistently falls inside the black circle displayed in the animation.
