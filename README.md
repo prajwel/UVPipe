@@ -107,13 +107,13 @@ Follow the steps below to set up and execute the Python scripts:
     📥 [Download UVIT Astrometry Index Files (ZIP)](https://zenodo.org/records/12684908/files/UVIT_astrometry.zip?download=1)
     - Extract the downloaded ZIP file into a directory of your choice.
     - Open the `astrometry.cfg` file located in the `UVPipe_Pilot` directory and configure `astrometry.net` to use the downloaded index files by specifying the `add_path` parameter. For example:
-    ```
-    ...
-    # In which directories should we search for indices?
-    add_path /home/prajwel/UVIT_astrometry/GAIA_epoch_2000_index_files_for_UVIT_astrometry
-    add_path /home/prajwel/UVIT_astrometry/5200
-    ...
-    ```
+        ``` bash
+        ...
+        # In which directories should we search for indices?
+        add_path /home/prajwel/UVIT_astrometry/GAIA_epoch_2000_index_files_for_UVIT_astrometry
+        add_path /home/prajwel/UVIT_astrometry/5200
+        ...
+        ```
 
 2. Prepare the Working Directory
     - Copy all files from the `UVPipe_Pilot` directory to the working directory containing the Level1 dataset.
