@@ -42,7 +42,7 @@ UVPipe will exclusively run on Level1 files in gzipped tarball format. If the Le
 bash Level1_zip_to_gzipped_tarball.sh LEVL1AS1UVT20160322T01_051T01_9000000390_02613.zip
 ```
 
-# UVPipe setup
+# UVPipe setup and run
 
 Ensure that all the required dependencies listed above are installed. Next, download the UVPipe source code from the [UVPipe GitHub Repository](https://github.com/prajwel/UVPipe).
 
