@@ -3,8 +3,8 @@
 rm curve_orbitwise_* source_* *orbit_* *animation* combined_* RA_Dec_combined_* UV_oriented_combined_VIS_for_*
 
 #combinescript=create_combined_events_lists.py
-combinescript=background_removed__create_combined_events_lists.py
-#combinescript=bright_source__create_combined_events_lists.py
+#combinescript=background_removed__create_combined_events_lists.py
+combinescript=bright_source__create_combined_events_lists.py
 
 precombining=pre_combining.log
 postcombining=post_combining.log
@@ -72,3 +72,5 @@ echo "Running find_bad_combined_events_lists_using_curvit.py" >> $postcombining
 cat $precombining $postcombining > combining.log
 
 rm -rf output
+
+python make_L2ICD_defined_products.py
