@@ -40,6 +40,8 @@ UVPipe requires Python version 3.9 or above. The required Python packages can be
 * Astrometry.net
 * Podman
 
+> **Suggestion:** You can install Astrometry.net using `conda`. See [this link](https://github.com/conda-forge/astrometry-feedstock) for details.
+
 ## Level1 dataset format
 
 UVPipe will exclusively run on Level1 files in gzipped tarball format. If the Level1 dataset is in ZIP format, first convert it to gzipped tarball format using the `Level1_zip_to_gzipped_tarball.sh` script (found inside the `misc/` directory). For example:
