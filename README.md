@@ -5,6 +5,8 @@
 <img src="https://i.imgur.com/9Zez5eV.png" width="400"/>
 </p>
 
+# UVPipe manuscript: https://arxiv.org/pdf/2504.00982
+
 ## Introduction
 
 The Ultraviolet Imaging Telescope (UVIT) is one of the five payloads onboard the AstroSat space observatory.
