@@ -3,12 +3,11 @@
 import os
 import shutil
 import numpy as np
+import datetime
 
 from glob import glob
 from astropy.io import fits
 from astropy.time import Time
-from datetime import datetime
-
 
 allowed_CALDB_versions = ["2.1.0", "2.1.0-frm05274"]
 
@@ -630,7 +629,7 @@ def make_L2ICD_defined_products(driver_module_param_file):
         generate_ICD_VIS_products(channel, window_filter, CALDB_version)
 
 
-now_time = datetime.utcnow().isoformat(sep="T", timespec="seconds")
+now_time = datetime.datetime.now(datetime.UTC).isoformat(sep="T", timespec="seconds")
 level1_dataset = glob("LEVL1AS1UVT*.tar_V*2.gz")
 if len(level1_dataset) == 1:
     level1_dataset = level1_dataset[0]
