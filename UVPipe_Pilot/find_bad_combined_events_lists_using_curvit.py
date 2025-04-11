@@ -195,7 +195,7 @@ for coo_file in coo_files:
             events_list=events_list,
             xp=x_centre - 1,
             yp=y_centre - 1,
-            radius=2.5,
+            radius=aperture_radius,
             framecount_per_sec=framecount_per_sec,
             time_separation=time_separation,
         )
