@@ -178,7 +178,17 @@ def coadd_vis_image(VIS_RAS_file=None):
         print("History missing for events list in {}".format(VIS_RAS_file))
 
     VIS_frames = glob("output/*/*/*/" + ras_num + "/*/SignalFrames/*fits")
-    VIS_frames.sort()
+
+    # Extract time values
+    VIS_frame_time_values = [
+        float(re.search(r"_t(\d+\.\d+)_f", VIS_frame_file).group(1))
+        for VIS_frame_file in VIS_frames
+    ]
+
+    VIS_frame_time_values = np.array(VIS_frame_time_values)
+    VIS_frames = np.array(VIS_frames)
+    VIS_frames = VIS_frames[np.argsort(VIS_frame_time_values)]
+    VIS_frames = VIS_frames.tolist()
 
     all_vis_frames = get_framedata_joblib_loop(VIS_frames[1:])
     gc.collect()
