@@ -9,13 +9,18 @@ precombining=pre_combining.log
 postcombining=post_combining.log
 extralog=extra.log
 
-python check_CALDB_configuration.py LEVL1AS1UVT*tar_V*
+python check_CALDB_configuration.py LEVL1AS1UVT*tar_V* 2>&1 | tee $extralog
 if [ $? -eq 1 ]; then
     exit
 fi
 
-python groom.py > $extralog 2>&1
+python groom.py >> $extralog 2>&1
 for d in uvt_*; do python cascade_sieve.py "$d"; done >> $extralog 2>&1
+
+python check_episode_framerates.py 2>&1 | tee -a $extralog
+if [ $? -eq 1 ]; then
+    exit
+fi
 
 echo "Running modify_episode_events_lists.py" > $precombining
 python modify_episode_events_lists.py >> $precombining 2>&1
