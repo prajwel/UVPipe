@@ -150,3 +150,15 @@ UVPipe includes multiple built-in checks at various stages of execution. However
 2. **`_animation.gif` Files**
    - Two `_animation.gif` files will be generated, corresponding to two bright sources for each channel-filter-window combination.
    - Verify that the source centre consistently falls inside the black circle displayed in the animation.
+
+
+## **Miscellaneous Information**
+
+### Using `subsidiary_data_and_information/episode_data`
+
+Users are strongly encouraged to work with the combined data products. However, if episode-level data found under `subsidiary_data_and_information/episode_data` is to be used, please keep the following in mind:
+
+* The astrometric accuracy of episode-level data is typically poor.
+* UVPipe combines the UV episodes that are corrected using the same VIS drift series file. If such combining has been performed, it will be explicitly noted in the `combining.log` file located in the `subsidiary_data_and_information/logs` directory.
+* This combining is performed only for the event lists and exposure maps, as only these files are used by the pipeline to generate the combined products.
+* Do not use the episode image files and error maps for any episodes that were combined, as indicated in the `combining.log` file.
