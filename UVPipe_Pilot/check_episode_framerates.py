@@ -45,7 +45,7 @@ def check_framerate(filename):
     return raise_error_flag
 
 
-files_list = glob("uvt_*/*/*A_l2img.fits")
+files_list = glob("uvt_*/*/*I_l2img.fits")
 flags = []
 for filename in files_list:
     flags.append(check_framerate(filename))
