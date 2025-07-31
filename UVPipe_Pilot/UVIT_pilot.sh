@@ -17,6 +17,11 @@ fi
 python groom.py >> $extralog 2>&1
 for d in uvt_*; do python cascade_sieve.py "$d"; done >> $extralog 2>&1
 
+python check_drift.py 2>&1 | tee -a $extralog
+if [ $? -eq 1 ]; then
+    exit
+fi
+
 python check_episode_framerates.py 2>&1 | tee -a $extralog
 if [ $? -eq 1 ]; then
     exit
