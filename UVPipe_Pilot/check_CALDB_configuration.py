@@ -17,7 +17,7 @@ L1_dataset = str(sys.argv[1])
 drivermodule_param_file = "UVIT_DriverModule.par"
 target_string = "frm05274"
 
-mask_needed = int(L1_dataset[35:40]) >= 5274
+mask_needed = 5274 <= int(L1_dataset[35:40]) < 6494
 hp_masked = caldb_hp_masked_or_not(drivermodule_param_file, target_string)
 
 if hp_masked == mask_needed:
