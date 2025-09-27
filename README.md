@@ -12,7 +12,7 @@
 The Ultraviolet Imaging Telescope (UVIT) is one of the five payloads onboard the AstroSat space observatory.
 This document provides instructions on how to run the UVIT Level2 pipeline (hereafter referred to as UVPipe) on an input UVIT Level1 dataset.  UVPipe is developed in C++ and Python at the UVIT Payload Operations Centre (POC).
 
-Please note that the UVIT POC will process all UVIT Level1 datasets using the UVPipe version available at the time. The processed Level2 datasets will be available in the AstroSat Archive.
+**Please note that the UVIT POC will process all UVIT Level1 datasets using the UVPipe version available at the time. The processed Level2 datasets will be available in the [PRADAN AstroSat Archive](https://pradan.issdc.gov.in/as1/).**
 > **IMPORTANT:** UVPipe was developed for execution at the UVIT POC. If you are running it independently, please verify the obtained results. Report any errors or failures to the UVIT POC.
 
 ## Requirements
